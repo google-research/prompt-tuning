@@ -97,17 +97,30 @@ class PreprocessorsTest(tf.test.TestCase):
       for answer, gold_answer in zip(ex["answers"].numpy(), gold["answers"]):
         self.assertEqual(answer.decode("utf-8"), gold_answer)
 
-  def test_preprocess_wikilingua(self):
-    ds = tf.data.Dataset.from_tensor_slices(
-        {"source_aligned": {"en": ["english input"],
-                            "es": ["spanish input"]},
-         "target_aligned": {"en": ["english target"],
-                            "es": ["spanish target"]}})
-    processed_ds = preprocessors.preprocess_wikilingua(ds, "en")
-    print(processed_ds)
-    test_utils.assert_dataset(processed_ds,
-                              {"inputs": "english input",
-                               "targets": "english target"})
+  def test_preprocess_text_generation(self):
+    example = tf.data.Dataset.from_tensor_slices({
+        "source_aligned": {
+            "en": ["english input"],
+            "es": ["spanish input"]
+        },
+        "target_aligned": {
+            "en": ["english target"],
+            "es": ["spanish target"]
+        }
+    })
+    processed_example = preprocessors.preprocess_text_generation(
+        example,
+        source_key="source_aligned",
+        target_key="target_aligned",
+        task_name=None,
+        prefix="summarize:",
+        source_nested_key="en",
+        target_nested_key="es",
+    )
+    test_utils.assert_dataset(processed_example, {
+        "inputs": "summarize: english input",
+        "targets": "spanish target"
+    })
 
 
 if __name__ == "__main__":
