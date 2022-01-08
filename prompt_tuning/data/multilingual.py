@@ -246,6 +246,10 @@ WIKILINGUA_LANGS = {
     'vi': 'vietnamese_vi'
 }
 
+# Currently, we are not prepending any task name/prefix to each input example
+wikilingua_task_name = None
+wikilingua_prefix = None
+
 for model_prefix, model_features in features.MODEL_TO_FEATURES.items():
   # English train.
   t5.data.TaskRegistry.add(
@@ -255,23 +259,58 @@ for model_prefix, model_features in features.MODEL_TO_FEATURES.items():
       splits=['train'],
       text_preprocessor=[
           functools.partial(
-              pt_preprocessors.preprocess_wikilingua,
-              lang='en')
+              pt_preprocessors.preprocess_text_generation,
+              source_key='source_aligned',
+              target_key='target_aligned',
+              task_name=wikilingua_task_name,
+              prefix=wikilingua_prefix,
+              source_nested_key='en',
+              target_nested_key='en',
+          )
       ],
       output_features=model_features,
       metric_fns=[metrics.rouge])
 
   # Evaluation on other languages.
+  for split in ['validation', 'test']:
+    for lang_code, lang in WIKILINGUA_LANGS.items():
+      t5.data.TaskRegistry.add(
+          f'{model_prefix}pt_wikilingua_{split}.{lang_code}',
+          t5.data.TfdsTask,
+          tfds_name=f'gem/wiki_lingua_{lang}:1.1.0',
+          splits={'validation': split},
+          text_preprocessor=[
+              functools.partial(
+                  pt_preprocessors.preprocess_text_generation,
+                  source_key='source_aligned',
+                  target_key='target_aligned',
+                  task_name=wikilingua_task_name,
+                  prefix=wikilingua_prefix,
+                  source_nested_key=lang_code,
+                  target_nested_key=lang_code,
+              )
+          ],
+          output_features=model_features,
+          metric_fns=[metrics.rouge])
+
+  # Useful eval subsets for evaluation during training that takes 250 examples
+  # from the original evaluation set for each language
   for lang_code, lang in WIKILINGUA_LANGS.items():
     t5.data.TaskRegistry.add(
-        f'{model_prefix}pt_wikilingua_validation.{lang_code}',
+        f'{model_prefix}pt_wikilingua_eval_subset.{lang_code}',
         t5.data.TfdsTask,
         tfds_name=f'gem/wiki_lingua_{lang}:1.1.0',
-        splits={'validation': 'validation'},
+        splits={'validation': 'validation[:250]'},
         text_preprocessor=[
             functools.partial(
-                pt_preprocessors.preprocess_wikilingua,
-                lang=lang_code)
+                pt_preprocessors.preprocess_text_generation,
+                source_key='source_aligned',
+                target_key='target_aligned',
+                task_name=wikilingua_task_name,
+                prefix=wikilingua_prefix,
+                source_nested_key=lang_code,
+                target_nested_key=lang_code,
+            )
         ],
         output_features=model_features,
         metric_fns=[metrics.rouge])
@@ -283,6 +322,21 @@ for model_prefix, model_features in features.MODEL_TO_FEATURES.items():
         for lang_code in WIKILINGUA_LANGS.keys()]),
       default_rate=1.0)
 
+  t5.data.MixtureRegistry.add(
+      f'{model_prefix}pt_wikilingua_all_xx_eval_subsets', ([
+          f'{model_prefix}pt_wikilingua_eval_subset.{lang_code}'
+          for lang_code in WIKILINGUA_LANGS.keys()
+          if lang_code != 'en'
+      ]),
+      default_rate=1.0)
+
+  t5.data.MixtureRegistry.add(
+      f'{model_prefix}pt_wikilingua_zeroshot_eval_subset',
+      ([f'{model_prefix}pt_wikilingua.english_en_train',
+        f'{model_prefix}pt_wikilingua_eval_subset.en',
+        f'{model_prefix}pt_wikilingua_all_xx_eval_subsets',
+        ]),
+      default_rate=1.0)
 
 # ----- mC4 -----
 # Left-to-Right Language Modeling: This task has an empty input and text in the
