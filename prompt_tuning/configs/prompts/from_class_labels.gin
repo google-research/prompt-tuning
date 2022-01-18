@@ -1,0 +1,37 @@
+# Initialize the Prompt based on the class labels
+# Provides PROMPT
+#
+# Requires PROMPT_LENGTH, VOCABULARY, EMBEDDING_FILE, and CLASS_LABELS to be
+# set.
+#
+# Include as a --gin_file argument after the `models/*.gin` arguments.
+from __gin__ import dynamic_registration
+
+from prompt_tuning import prompts
+from prompt_tuning.train import prompts as train_prompts
+
+CLASS_LABELS = %gin.REQUIRED
+
+PROMPT = @train_prompts.Prompt
+train_prompts.Prompt.prompt = @prompts.Prompt()
+
+prompts.Prompt:
+  length = %PROMPT_LENGTH
+  prompt_init = @prompt_init/prompts.from_embedded_list()
+
+prompt_init/prompts.from_embedded_list:
+  embeddings = @prompt_init/prompts.t5x_load()
+  vocab = %VOCABULARY
+  texts = %CLASS_LABELS
+  initializer = @prompt_init/prompts.from_sample_of_embeddings()
+
+prompt_init/prompts.from_sample_of_embeddings:
+  embeddings = @prompt_init/prompts.t5x_load()
+  population_size = 5000
+
+prompt_init/prompts.t5x_load:
+  checkpoint_path = %INITIAL_CHECKPOINT_PATH
+  variable_path = "token_embedder/embedding"
+
+# Then set overrides in the launch script:
+# --gin.LABELS="['entailment', 'contradiction', 'neutral']" \

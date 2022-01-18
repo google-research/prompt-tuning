@@ -1,0 +1,11 @@
+# T5 1.1 XL Prompt model.
+
+include 'prompt_tuning/configs/models/t5_1_1_base_prompt.gin'
+
+# Architecture overrides
+NUM_HEADS = 32
+NUM_ENCODER_LAYERS = 24
+NUM_DECODER_LAYERS = 24
+HEAD_DIM = 64
+EMBED_DIM = 2048
+MLP_DIM = 5120

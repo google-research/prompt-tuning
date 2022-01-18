@@ -1,0 +1,14 @@
+# Beam search decoding.
+# Include as a --gin_file argument after the `models/*.gin` and `prompts/*.gin`
+# arguments.
+from __gin__ import dynamic_registration
+
+from t5x import decoding
+from t5x import models
+
+models.EncoderDecoderModel.predict_batch_with_aux:
+  num_decodes = 4
+models.EncoderDecoderModel:
+  decode_fn = @decoding.beam_search
+decoding.beam_search:
+  alpha = 0.6

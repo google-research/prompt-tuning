@@ -1,0 +1,11 @@
+# mT5 1.1 Large Prompt model.
+# Provides MODEL, PROMPT, and PROMPT_LENGTH
+
+include 'prompt_tuning/configs/models/mt5_base_prompt.gin'
+
+NUM_HEADS = 16
+NUM_ENCODER_LAYERS = 24
+NUM_DECODER_LAYERS = 24
+HEAD_DIM = 16
+EMBED_DIM = 1024
+MLP_DIM = 2816

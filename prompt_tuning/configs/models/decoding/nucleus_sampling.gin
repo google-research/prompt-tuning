@@ -1,0 +1,16 @@
+# Nucleus sampling decoding.
+# Include as a --gin_file argument after the `models/*.gin` and `prompts/*.gin`
+# arguments.
+from __gin__ import dynamic_registration
+
+from t5x import decoding
+from t5x import models
+
+models.EncoderDecoderModel.predict_batch_with_aux:
+  num_decodes = 1
+models.EncoderDecoderModel:
+  decode_fn = @decoding.temperature_sample
+decoding.temperature_sample:
+  temperature = 1.0
+  topp = 0.9
+  topk = 0

@@ -1,0 +1,49 @@
+# Defaults for infer.py.
+#
+#
+# You must also include a binding for MODEL.
+#
+# Required to be set:
+#
+# - MIXTURE_OR_TASK_NAME: The SeqIO Task/Mixture to use for inference
+# - TASK_FEATURE_LENGTHS: The lengths per key in the SeqIO Task to trim features
+#                         to.
+# - CHECKPOINT_PATH: The model checkpoint to use for inference
+# - INFER_OUTPUT_DIR: The dir to write results to.
+# - PROMPT_FILE: The file to load the prompt from.
+#
+#
+# Commonly overridden options:
+#
+# - infer.mode
+# - infer.checkpoint_period
+# - infer.shard_id
+# - infer.num_shards
+# - DatasetConfig.split
+# - DatasetConfig.batch_size
+# - DatasetConfig.use_cached
+# - RestoreCheckpointConfig.is_tensorflow
+# - RestoreCheckpointConfig.mode
+# - PjitPartitioner.num_partitions
+from __gin__ import dynamic_registration
+import __main__ as infer_script
+from t5x import partitioning
+from prompt_tuning.train import partitioning as prompt_partitioning
+
+include "t5x/configs/runs/infer.gin"
+# Force loading a prompt from a file. If you want to evaluate a prompted model
+# from the checkpoint produced by the prompt tuning training run (instead of
+# loading from the checkpoint used to initialize prompt tuning + the learned
+# prompt from a file that this config enables) you can use
+# "t5x/configs/runs/infer.py" directly (you will probably need
+# to update the RestoreCheckpointConfig to disable fallback_to_scratch used
+# during training).
+include "prompt_tuning/configs/prompts/from_file.gin"
+
+# Enable "reinitialization" of parameters so the prompt will be initialized from
+# file.
+infer_script.infer.fallback_init_rng = 0
+
+# Add partitioning rules for our new axis named `prompt`
+partitioning.ModelBasedPjitPartitioner:
+  logical_axis_rules = @prompt_partitioning.standard_logical_axis_rules()

@@ -1,0 +1,14 @@
+# Common pieces for the tests with the small model.
+
+include 't5x/google/examples/flaxformer_t5/configs/models/t5_1_1_base.gin'
+
+NUM_HEADS = 2
+HEAD_DIM = 2
+EMBED_DIM = 4
+MLP_DIM = 8
+NUM_ENCODER_LAYERS = 2
+NUM_DECODER_LAYERS = 2
+
+relative_position_biases.RelativePositionBiases:
+  num_buckets = 4
+  max_distance = 8

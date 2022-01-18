@@ -1,0 +1,3 @@
+recursive-include prompt_tuning/configs *.gin
+recursive-include prompt_tuning/pretrained_prompts *.npy
+recursive-include prompt_tuning/pretrained_prompts *.md

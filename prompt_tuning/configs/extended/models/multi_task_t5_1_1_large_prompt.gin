@@ -1,0 +1,11 @@
+# T5.1.1 Large Prompt model.
+
+include 'prompt_tuning/configs/extended/models/multi_task_t5_1_1_base_prompt.gin'
+
+# Architecture overrides
+NUM_HEADS = 16
+NUM_ENCODER_LAYERS = 24
+NUM_DECODER_LAYERS = 24
+HEAD_DIM = 64
+EMBED_DIM = 1024
+MLP_DIM = 2816

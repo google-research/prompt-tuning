@@ -1,0 +1,25 @@
+# Test config to exercise train.py with "T5X core" partitioning.
+
+# We disable input order checks because the gin linter seems to want inputs in
+# alphabetical order without considering std, third_party, and project packages
+# like the python ordering of imports do. So disable that for now.
+
+# ginlint: disable=bad-import-order
+from __gin__ import dynamic_registration
+from t5x import utils
+from t5x import partitioning
+
+include 'prompt_tuning/configs/runs/prompt_finetune.gin'
+include 'prompt_tuning/configs/extended/test/multi_task_t5_1_1_tiny_prompt.gin'
+
+MODEL_DIR = "/tmp"  # Will be overridden in test.
+
+TRAIN_STEPS = 3
+MIXTURE_OR_TASK_MODULE = "prompt_tuning.data.tasks"
+MIXTURE_OR_TASK_NAME = "taskless_super_glue_boolq_v102_examples"
+TASK_FEATURE_LENGTHS = {"inputs": 512, "targets": 512}
+
+partitioning.PjitPartitioner.num_partitions = 1
+utils.SaveCheckpointConfig.period = 2
+train/utils.DatasetConfig.batch_size = 8
+train_eval/utils.DatasetConfig.batch_size = 8

@@ -1,0 +1,11 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+python_files = "*_test.py"
+log_level = "INFO"
+# Skip train_test as it requires TPUs to execute.
+# Skip tasks_test as they require TFDS pre-setup.
+# Skip utils_test as it requires temporary files that doesn't work well on Cloud.
+addopts = "--ignore=prompt_tuning/train/train_test.py --ignore=prompt_tuning/data/tasks_test.py --ignore=prompt_tuning/train/utils_test.py"

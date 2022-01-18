@@ -1,0 +1,24 @@
+# Initialize the Prompt from a saved numpy file.
+# Provides PROMPT
+#
+# Requires PROMPT_LENGTH, and PROMPT_FILE to be set.
+#
+# Include as a --gin_file argument after the `models/*.gin` arguments.
+from __gin__ import dynamic_registration
+
+from prompt_tuning import prompts
+from prompt_tuning.train import prompts as train_prompts
+
+PROMPT_FILE = %gin.REQUIRED
+
+PROMPT = @train_prompts.Prompt
+train_prompts.Prompt.prompt = @prompts.Prompt()
+prompts.Prompt:
+  length = %PROMPT_LENGTH
+  prompt_init = @prompt_init/prompts.from_array()
+
+prompt_init/prompts.from_array.prompt = @prompt_init/prompts.np_load()
+prompt_init/prompts.np_load.path = %PROMPT_FILE
+
+# Then set overrides in the launch script:
+# --gin.PROMPT_FILE="'/path/to/numpy/prompt'"

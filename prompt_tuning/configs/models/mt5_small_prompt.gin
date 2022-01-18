@@ -1,0 +1,11 @@
+# mt5 1.1 small Prompt model.
+# Provides Model, Prompt, and PROMPT_LENGTH
+
+include 'prompt_tuning/configs/models/mt5_base_prompt.gin'
+
+NUM_HEADS = 6
+NUM_ENCODER_LAYERS = 8
+NUM_DECODER_LAYERS = 8
+HEAD_DIM = 64
+EMBED_DIM = 512
+MLP_DIM = 1024
