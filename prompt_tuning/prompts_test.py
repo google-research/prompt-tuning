@@ -173,14 +173,70 @@ class PromptsTest(parameterized.TestCase):
     np.testing.assert_equal(prompt[0, :], true_gold)
     np.testing.assert_equal(prompt[1, :], false_gold)
 
-  def test_from_embedded_list_wrong_features(self):
+  def test_from_embedded_string_longer_than_prompt_size(self):
+    prompt_length = 2
+    vocab_size = 100
+    embed_size = 10
+    vocab_mock = mock.create_autospec(
+        seqio.SentencePieceVocabulary, instance=True, spec_set=True)
+
+    vocab_mock.encode.return_value = [10, 50, 75]
+
+    fake_embeddings = np.tile(
+        np.reshape(np.arange(vocab_size), (-1, 1)), (1, embed_size))
+
+    gold = fake_embeddings[[10, 50,], :]
+
+    init = prompts.from_embedded_string(fake_embeddings, vocab_mock,
+                                        "this is my example",
+                                        nn.initializers.zeros)
+
+    prompt = jax.jit(
+        init, static_argnums=1)(jax.random.PRNGKey(0),
+                                (prompt_length, embed_size))
+
+    self.assertEqual(prompt.shape, (prompt_length, embed_size))
+    np.testing.assert_equal(prompt, gold)
+
+  def test_from_embedded_string_shorter_than_prompt_size(self):
+    prompt_length = 6
+    vocab_size = 100
+    embed_size = 10
+    vocab_mock = mock.create_autospec(
+        seqio.SentencePieceVocabulary, instance=True, spec_set=True)
+
+    vocab_mock.encode.return_value = [10, 50, 75]
+
+    fake_embeddings = np.tile(
+        np.reshape(np.arange(vocab_size), (-1, 1)), (1, embed_size))
+
+    gold = fake_embeddings[[10, 50, 75], :]
+
+    init = prompts.from_embedded_string(fake_embeddings, vocab_mock,
+                                        "this is my example",
+                                        nn.initializers.zeros)
+
+    prompt = jax.jit(
+        init, static_argnums=1)(jax.random.PRNGKey(0),
+                                (prompt_length, embed_size))
+
+    self.assertEqual(prompt.shape, (prompt_length, embed_size))
+    np.testing.assert_equal(prompt[:3], gold)
+    np.testing.assert_equal(prompt[3:], np.zeros((3, embed_size)))
+
+  @parameterized.named_parameters(
+      dict(testcase_name="embedded_list",
+           init_fn=prompts.from_embedded_list),
+      dict(testcase_name="embedded_string",
+           init_fn=prompts.from_embedded_string))
+  def test_from_embedded_list_wrong_features(self, init_fn):
     vocab_size = 100
     embed_size = 10
     prompt_size = 20
     prompt_length = 15
     embeddings = jnp.zeros((vocab_size, embed_size))
 
-    init = prompts.from_embedded_list(embeddings, None, None, None)
+    init = init_fn(embeddings, None, None, None)
     with self.assertRaises(ValueError):
       jax.jit(
           init, static_argnums=1)(jax.random.PRNGKey(0),

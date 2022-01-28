@@ -313,6 +313,69 @@ def from_embedded_list(
   return initialize_from_embedded_list
 
 
+def from_embedded_string(
+    embeddings: Array,
+    vocab: seqio.SentencePieceVocabulary,
+    text: str,
+    initializer: Optional[Callable[[Array, Sequence[int]], Array]] = None
+) -> Callable[[Array, Sequence[int]], Array]:
+  """Initialize with the embedded values of a string.
+
+  Args:
+    embeddings: [V, H] The embedding table we are looking up words in.
+    vocab: The vocabulary to convert strings to integers.
+    text: The string to embed for initialization.
+    initializer: An initializer used to repopulate the prompt in case the
+      provided list of strings is shorter than the prompt length.
+
+  Returns:
+    A closure over the embeddings and vocab that returns the initialized prompt.
+  """
+
+  def initialize_from_embedded_string(rng: Array,
+                                      shape: Sequence[int]) -> Array:
+    """Create a prompt by embedding given words.
+
+    Args:
+      rng: The jax rng that is passed to the sub-initializer.
+      shape: The shape of the prompt we are making. `shape[0]` gives us the
+        length of the prompt.
+
+    Raises:
+      ValueError if the number of features in the embedding table don't match
+      the number of features in the prompt.
+
+    Returns:
+      The prompt with `prompt[i]` initialized with the value of
+      `embeddings[vocab.encode(text)[i]]`. [P, H]
+    """
+    if embeddings.shape[-1] != shape[-1]:
+      raise ValueError(
+          "Shape mismatch between the number of features in the "
+          f"embeddings: {embeddings.shape[-1]} and the requested prompt shape "
+          f"{shape[-1]}.")
+    if initializer is None:
+      prompt = nn.initializers.uniform()(rng, shape)
+    else:
+      prompt = initializer(rng, shape)
+
+    segmented_text = vocab.tokenizer.EncodeAsPieces(text)
+    segmented_ids = vocab.encode(text)
+    if len(segmented_ids) > len(prompt):
+      logging.warning(
+          "Ran out of prompt positions before initializing with "
+          "all the provided text. %s has been used for "
+          "initialization and %s will be skipped.",
+          segmented_text[:len(prompt)],
+          segmented_text[len(prompt)])
+    embedded_text = embeddings[segmented_ids[:len(prompt)]]
+    prompt = prompt.at[list(range(len(embedded_text))), :].set(embedded_text)
+
+    return jnp.array(prompt)
+
+  return initialize_from_embedded_string
+
+
 class Prompt(nn.Module):
   """A module that produces a learnable prompt.
 

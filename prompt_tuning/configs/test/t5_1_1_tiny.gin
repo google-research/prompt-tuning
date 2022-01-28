@@ -1,6 +1,6 @@
 # Common pieces for the tests with the small model.
 
-include 't5x/google/examples/flaxformer_t5/configs/models/t5_1_1_base.gin'
+include 'nlp/nlx/infrastructure/flaxformer/t5x/configs/t5/models/t5_1_1_base.gin'
 
 NUM_HEADS = 2
 HEAD_DIM = 2

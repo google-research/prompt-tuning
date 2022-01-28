@@ -355,8 +355,8 @@ We support initializing prompt timesteps with the embedding of class labels
 a list of words (class labels) to use. Each words is tokenized by a provided
 vocab; embedded with a provided vocab table; aggregated, if need be, across
 sub-tokens; and used to initialize a prompt time-step. If the provided tokens
-don't cover the full prompt length fall back to another provided initializer is
-used.
+don't cover the full prompt length, the missing tokens are initialized using
+the provided fall back initializer.
 
 We can match the paper, where unfilled prompt tokens are filled by sampling from
 the embedding table, by composing this initialization with the one above. It can
@@ -366,13 +366,27 @@ This requires setting an `EMBEDDING_FILE` (which is the same as above) and
 `CLASS_LABELS`, which is a list of the words that you want to embed as prompt
 initialization.
 
+**From String**
+
+We also support initializing a prompt with the embedding of some string, often
+used to start from a discrete prompt or a task description. This uses the
+`from_embedded_string` initializer. The string is tokenized by the provided
+vocabulary, each token is looked up in the provided embedding table, and the
+resulting embedded representation of the string is used as a prompt
+initialization. If the provided tokens don't cover the full prompt length, the
+missing tokens are initialized using the provided fall back initializer.
+
+_Note:_ The vocabulary just converts the string into a sequence of ids, you
+will need to ensure that the string matches the result of any text formatting
+(spaces around punctuation, etc.) that your SeqIO task does.
+
 **From File**
 
 You can also load a prompt from a file with the `from_array` initializer to
 enable transfer across tasks. This is done with
 [`--gin_file=prompt_tuning/configs/prompts/from_file.gin`](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/configs/prompts/from_file.gin).
 This requires setting `PROMPT_FILE` with a path to the Numpy file with the
-prompt to load. Numpy versions of the prompt are emitted by defaulwhen training,
+prompt to load. Numpy versions of the prompt are emitted by default when training,
 but the prompt can also be extracted with the script mentioned above.
 
 ## Released Model Checkpoints
