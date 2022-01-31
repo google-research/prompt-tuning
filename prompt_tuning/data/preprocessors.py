@@ -89,20 +89,44 @@ def preprocess_tsv_to_qa(line,
 
 
 @seqio.map_over_dataset
-def preprocess_wikilingua(example, lang):
-  """Preprocess WikiLingua dataset.
+def preprocess_text_generation(
+    example,
+    source_key,
+    target_key,
+    task_name=None,
+    prefix=None,
+    source_nested_key=None,
+    target_nested_key=None,
+):
+  """Convert a text generation dataset to a text-to-text format.
+
+  Each {<source_text>, <target_text>} example will have the format:
+  {'inputs': <task_name> <prefix>: <source_text>, 'targets': <target_text>}
 
   Args:
-    example: A TF example from the WikiLingua dataset.
-    lang: Two character language code (e.g. 'es', 'de').
+    example: An example to process.
+    source_key: The key for the source text.
+    target_key: The key for the target text.
+    task_name: The name of the task.
+    prefix: A text that specifies how the model should perform the task.
+    source_nested_key: The nested key for the source text (if any).
+    target_nested_key: The nested key for the target text (if any).
 
   Returns:
-    A processed example with fields: inputs and targets.
+    A preprocessed example with the format listed above.
   """
-  processed_example = {}
-  processed_example['inputs'] = example['source_aligned'][lang]
-  processed_example['targets'] = example['target_aligned'][lang]
-  return processed_example
+
+  source_text = example[source_key] if source_nested_key is None else example[
+      source_key][source_nested_key]
+  target_text = example[target_key] if target_nested_key is None else example[
+      target_key][target_nested_key]
+
+  strs_to_join = [s for s in [task_name, prefix, source_text] if s is not None]
+
+  return {
+      'inputs': tf.strings.join(strs_to_join, separator=' '),
+      'targets': target_text
+  }
 
 
 @seqio.map_over_dataset
