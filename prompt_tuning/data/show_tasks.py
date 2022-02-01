@@ -24,6 +24,7 @@ python -m prompt_tuning.data.show_tasks \
   --split=test
 
 """
+import importlib
 from absl import app
 from absl import flags
 import byt5.tasks as byt5_tasks  # pylint: disable=unused-import
@@ -41,10 +42,15 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string("task", None, "The task you want to look at.")
 flags.DEFINE_string("split", "validation",
                     "The split you want to look at in the task.")
+flags.DEFINE_string("module",
+                    None,
+                    "An extra module containing tasks to import.")
 
 
 def main(_):
   """Print all new tasks from the registry or a specific task."""
+  if FLAGS.module is not None:
+    importlib.import_module(FLAGS.module)
   if FLAGS.task is None:
     print("New tasks from `prompt_tuning.data.tasks`")
     for task in sorted(seqio.TaskRegistry._REGISTRY.keys()):  # pylint: disable=protected-access
