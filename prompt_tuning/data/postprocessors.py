@@ -26,7 +26,7 @@ There are also postprocessors that translate between the output labels for the
 qqp and mrpc tasks, used in testing the transferability of models.
 """
 
-from typing import Sequence, Mapping, Any, Union
+from typing import Sequence, Mapping, Any, Union, Optional
 from prompt_tuning.data import constants
 from prompt_tuning.data import utils
 
@@ -46,9 +46,32 @@ def postprocess_with_examples(
     prediction_text_field: str = constants.PREDICTION_TEXT,
     example_fields: Sequence[str] = (constants.INPUT_TEXT,
                                      constants.TARGET_TEXT),
+    decoded_model_output_field: Optional[str] = None,
     **kwargs,
 ) -> Union[Mapping[str, Any], Any]:
-  """Wrap a postprocessing function so that it returns a dictionary with extra information.
+  """Wrap a postprocessing function so that it returns a dict with extra info.
+
+  Note:
+    The decoded_model_output_field parameter allows for chaining multiple
+    postprocessing functions while allowing access to intermediate values
+    throughout the chain. For example, if you had a postprocessing function that
+    mapped a set of words to a single one (allowing the model to output related
+    label verbalizers and still be correct, e.g., "good", "great", and
+    "positive" all mapping to positive). You could do this before the default
+    postprocessors (that maps the label to an int) with `sequential` but then
+    you would lose the actual string the model output as postprocessors only
+    take strings as input.
+
+    This arguments lets your postprocessors return a dict so that you can
+    include this intermediate information (for example, the model's output was
+    "good" and your postprocessors would output
+    {"unified_prediction": "positive", "real_prediction": "good"}). Now you
+    next postprocessor can be called with
+    `decoder_model_output_field="unified_prediction"` allowing you to call the
+    next postprocessor as if it was the first postprocessor, while still having
+    access to values in the dict. For example, these original model outputs
+    can be collected and create a distribution all the actual verbalizers the
+    model uses for some class.
 
   Args:
     postprocess_func: The actual postprocessing function you are going to use.
@@ -56,6 +79,9 @@ def postprocess_with_examples(
     prediction_field: The dictionary key to save the postprocessed output to.
     prediction_text_field: The dictionary key to save the model output to.
     example_fields: Fields from the example to copy into the output.
+    decoded_model_output_field: In the case where the decoded_model_output is a
+      mapping (for example multiple of these functions are run in sequence),
+      this field is key where the actual model prediction lives.
     **kwargs: Extra arguments. One should be `example` which has the unprocessed
       batch that has things like the raw text in it.
 
@@ -63,6 +89,15 @@ def postprocess_with_examples(
     A mapping that includes the postprocessed prediction, the raw prediction
     text, and any extra fields from the example you want.
   """
+  # decoded_model_output_field means we expect the input to be dict from a
+  # previous postprocessor, we extract and the actual model output and save the
+  # dict as the "decoded_model_output_context" which we are allowed to pull any
+  # example_fields from.
+  decoded_model_output_context = {}
+  if (decoded_model_output_field is not None and
+      not kwargs.get("is_target", False)):
+    decoded_model_output_context = decoded_model_output
+    decoded_model_output = decoded_model_output[decoded_model_output_field]
   if kwargs.get("is_target", False):
     # Our targets are going to stay their normal type so follow the old behavior
     # of just calling the postprocess function on them.
@@ -72,7 +107,13 @@ def postprocess_with_examples(
       prediction_text_field: decoded_model_output
   }
   for field in example_fields:
-    result[field] = kwargs.get("example", {}).get(field)
+    # Look for the output field in the `example`, passed as a kwarg. If it
+    # doesn't have that key, try to look it up in the decoded model output
+    # context created by any previous postprocessors. If it still can't be
+    # found, set the field to `None`.
+    result[field] = kwargs.get("example", {}).get(
+        field,
+        decoded_model_output_context.get(field))
   return result
 
 
