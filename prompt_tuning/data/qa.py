@@ -66,7 +66,7 @@ for model_prefix, feats in features.MODEL_TO_FEATURES.items():
       postprocess_fn=functools.partial(
           pt_postprocessors.postprocess_with_examples,
           postprocessors.qa,
-          examples_fields=(
+          example_fields=(
               constants.TARGET_TEXT,
               constants.CONTEXT_TEXT,
               constants.QUESTION_TEXT,
