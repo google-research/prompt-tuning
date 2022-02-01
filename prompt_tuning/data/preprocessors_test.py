@@ -28,8 +28,6 @@ class PreprocessorsTest(tf.test.TestCase):
     gold_strings = [" ".join(s.split()[1:]) for s in input_strings]
     ds = tf.data.Dataset.from_tensor_slices({"inputs": input_strings})
 
-    print(ds)
-
     processed_ds = preprocessors.remove_first_text_token(ds)
 
     for res, gold in zip(processed_ds, gold_strings):
@@ -52,7 +50,7 @@ class PreprocessorsTest(tf.test.TestCase):
     for ex in processed_ds:
       self.assertEqual(ex[field][0].numpy().item(), vocab_size - (offset + 1))
 
-  def test_tsv_to_squad(self):
+  def test_tsv_to_qa(self):
     fake_data = textwrap.dedent("""
     id\tcontext\tquestion\tanswer\tanswers
     0\tThe capital of France is Paris\tWhat is the capital of France?\tParis\tParis|||paris
