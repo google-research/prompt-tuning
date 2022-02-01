@@ -16,9 +16,27 @@
 
 import textwrap
 import unittest.mock as mock
+from absl.testing import parameterized
+import numpy as np
+from prompt_tuning.data import features
 from prompt_tuning.data import preprocessors
 from seqio import test_utils
 import tensorflow.compat.v2 as tf
+import tensorflow_datasets as tfds
+
+
+INPUTS_SIZE = 10
+TARGETS_SIZE = 5
+TEXT_SIZE = 10
+
+
+def create_fake_text_dataset(examples: int = 10, text_size: int = TEXT_SIZE):
+  text = np.reshape(
+      # Start at 2 so we skip EOS=1 which could be a problem on any tests that
+      # actually decode the fake inputs.
+      np.arange(2, examples * text_size + 2),
+      (-1, text_size)).astype(np.int32)
+  return tf.data.Dataset.from_tensor_slices({"targets": text})
 
 
 class PreprocessorsTest(tf.test.TestCase):
@@ -27,8 +45,6 @@ class PreprocessorsTest(tf.test.TestCase):
     input_strings = ["This is my first example", "The second"]
     gold_strings = [" ".join(s.split()[1:]) for s in input_strings]
     ds = tf.data.Dataset.from_tensor_slices({"inputs": input_strings})
-
-    print(ds)
 
     processed_ds = preprocessors.remove_first_text_token(ds)
 
@@ -52,7 +68,7 @@ class PreprocessorsTest(tf.test.TestCase):
     for ex in processed_ds:
       self.assertEqual(ex[field][0].numpy().item(), vocab_size - (offset + 1))
 
-  def test_tsv_to_squad(self):
+  def test_tsv_to_qa(self):
     fake_data = textwrap.dedent("""
     id\tcontext\tquestion\tanswer\tanswers
     0\tThe capital of France is Paris\tWhat is the capital of France?\tParis\tParis|||paris
@@ -121,6 +137,78 @@ class PreprocessorsTest(tf.test.TestCase):
         "inputs": "summarize: english input",
         "targets": "spanish target"
     })
+
+
+class BARTTaskTest(parameterized.TestCase):
+
+  @parameterized.named_parameters(
+      dict(testcase_name="text_infilling",
+           preprocessor=preprocessors.text_infilling),
+      dict(testcase_name="token_deletion",
+           preprocessor=preprocessors.token_deletion))
+  def test_inputs_shorter_than_targets(self, preprocessor):
+    ds = create_fake_text_dataset()
+    ds = preprocessor(ds,
+                      {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
+                      features.T5_FEATURES,
+                      noise_density=0.5)
+    for ex in tfds.as_numpy(ds):
+      self.assertLess(ex["inputs"].shape[0], ex["targets"].shape[0])
+
+  @parameterized.named_parameters(
+      dict(testcase_name="text_infilling",
+           preprocessor=preprocessors.text_infilling),
+      dict(testcase_name="token_deletion",
+           preprocessor=preprocessors.token_deletion))
+  def test_extra_id_not_in_targets(self, preprocessor):
+    ds = create_fake_text_dataset()
+    ds = preprocessor(ds,
+                      {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
+                      features.T5_FEATURES,
+                      noise_density=0.5)
+    vocab = features.T5_FEATURES["targets"].vocabulary
+    for ex in tfds.as_numpy(ds):
+      targets_text = vocab.decode(ex["targets"].tolist())
+      self.assertNotIn("extra_id", targets_text)
+
+  @parameterized.named_parameters(
+      dict(testcase_name="text_infilling",
+           preprocessor=preprocessors.text_infilling),
+      dict(testcase_name="token_deletion",
+           preprocessor=preprocessors.token_deletion))
+  def test_target_tokens_match_original_tokens(self, preprocessor):
+    ds = create_fake_text_dataset()
+    processed_ds = preprocessor(
+        ds,
+        {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
+        features.T5_FEATURES,
+        noise_density=0.5)
+    for processed_ex, ex in zip(tfds.as_numpy(processed_ds), tfds.as_numpy(ds)):
+      np.testing.assert_array_equal(processed_ex["targets"], ex["targets"])
+
+  def test_extra_id_not_in_token_deletion_inputs(self):
+    ds = create_fake_text_dataset()
+    ds = preprocessors.token_deletion(
+        ds,
+        {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
+        features.T5_FEATURES,
+        noise_density=0.5)
+    vocab = features.T5_FEATURES["inputs"].vocabulary
+    for ex in tfds.as_numpy(ds):
+      inputs_text = vocab.decode(ex["inputs"].tolist())
+      self.assertNotIn("extra_id", inputs_text)
+
+  def test_extra_id_in_text_infilling_inputs(self):
+    ds = create_fake_text_dataset()
+    ds = preprocessors.text_infilling(
+        ds,
+        {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
+        features.T5_FEATURES,
+        noise_density=0.5)
+    vocab = features.T5_FEATURES["inputs"].vocabulary
+    for ex in tfds.as_numpy(ds):
+      inputs_text = vocab.decode(ex["inputs"].tolist())
+      self.assertIn("extra_id", inputs_text)
 
 
 if __name__ == "__main__":
