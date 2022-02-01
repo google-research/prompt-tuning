@@ -42,6 +42,44 @@ class UtilsTest(absltest.TestCase):
     with self.assertRaises(ValueError):
       utils.task_mapping([], {'alias': 'missing_task'})
 
+  def test_remove_prefix(self):
+    prefix = 'prefix'
+    gold = 'some other words'
+    inputs = f'{prefix}{gold}'
+    self.assertEqual(utils.remove_prefix(inputs, prefix), gold)
+
+  def test_remove_prefix_missing(self):
+    prefix = 'prefix'
+    gold = 'some other words'
+    inputs = gold
+    self.assertEqual(utils.remove_prefix(inputs, prefix), gold)
+
+  def test_remove_prefix_infix(self):
+    prefix = 'prefix'
+    post = 'some other words'
+    pre = 'EXTRA EXTRA, PREFIX ALL ABOUT IT'
+    inputs = f'{pre}{prefix}{post}'
+    self.assertEqual(utils.remove_prefix(inputs, prefix), inputs)
+
+  def test_remove_suffix(self):
+    suffix = 'suffix'
+    gold = 'some other words'
+    inputs = f'{gold}{suffix}'
+    self.assertEqual(utils.remove_suffix(inputs, suffix), gold)
+
+  def test_remove_suffix_missing(self):
+    suffix = 'suffix'
+    gold = 'some other words'
+    inputs = gold
+    self.assertEqual(utils.remove_suffix(inputs, suffix), gold)
+
+  def test_remove_suffix_infix(self):
+    suffix = 'suffix'
+    post = 'things the follow after'
+    pre = 'i\'m def in front of the suffix'
+    inputs = f'{pre}{suffix}{post}'
+    self.assertEqual(utils.remove_suffix(inputs, suffix), inputs)
+
 
 if __name__ == '__main__':
   absltest.main()
