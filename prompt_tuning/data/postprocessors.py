@@ -28,20 +28,15 @@ qqp and mrpc tasks, used in testing the transferability of models.
 
 from typing import Sequence, Mapping, Any, Union
 from prompt_tuning.data import constants
-
-
-def remove_prefix(s: str, prefix: str) -> str:
-  """Remove prefix from the beginning of the string if present."""
-  if s.startswith(prefix):
-    return s[len(prefix):]
-  return s[:]
+from prompt_tuning.data import utils
 
 
 # This function is a t5 postprocessor function so it needs to take *args and
 # **kwargs, even though it doesn't use them itself.
 def remove_extra_id_0(decoded_model_output: str, *args, **kwargs) -> str:  # pylint: disable=unused-argument
   """Possibly remove `<extra_id_0>` and leading white space."""
-  return remove_prefix(decoded_model_output, constants.EXTRA_ID_0).lstrip()
+  return utils.remove_prefix(decoded_model_output,
+                             constants.EXTRA_ID_0).lstrip()
 
 
 def postprocess_with_examples(
