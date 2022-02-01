@@ -58,3 +58,17 @@ def task_mapping(tasks: Sequence[str],
                        "task.")
     task_index[alias] = task_index[target]
   return task_index
+
+
+def remove_prefix(s: str, prefix: str) -> str:
+  """Remove prefix from the beginning of the string if present."""
+  if s.startswith(prefix):
+    return s[len(prefix):]
+  return s[:]
+
+
+def remove_suffix(string: str, suffix: str) -> str:
+  """Remove suffix from the end of the string if present."""
+  if suffix and string.endswith(suffix):
+    return string[:-len(suffix)]
+  return string[:]
