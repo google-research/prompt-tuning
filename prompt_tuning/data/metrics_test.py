@@ -14,6 +14,7 @@
 
 """Tests for metrics."""
 
+import ast
 import unittest.mock as mock
 from absl.testing import absltest
 from prompt_tuning.data import metrics
@@ -67,6 +68,53 @@ class MetricsTest(absltest.TestCase):
 
     result = metrics.safe_sample(k, pop, None)
     self.assertLen(result, k)
+
+  def test_metric_label_set_stats(self):
+    predicted_labels = [{"prediction_pretokenized": p,
+                         "targets_pretokenized": t}
+                        for p, t in zip(list("12345"), list("23462"))]
+    target_card = 4
+    pred_card = 5
+    overlap = 3
+    target_minus_pred = 1
+    pred_minus_target = 2
+    golds = (target_card,
+             pred_card,
+             overlap,
+             target_minus_pred,
+             pred_minus_target)
+    result = metrics.label_set_stats(
+        None, predicted_labels, "m")["m label stats"].textdata
+    for line, metric in zip(result.split("\n\n"), golds):
+      self.assertEqual(int(line.rsplit(":", maxsplit=1)[1]), metric)
+
+  def test_metric_label_set_stats_with_sets(self):
+    predicted_labels = [{"prediction_pretokenized": p,
+                         "targets_pretokenized": t}
+                        for p, t in zip(list("12545"), list("13462"))]
+    target_card = 5
+    target_set = {"1", "2", "3", "4", "6"}
+    pred_card = 4
+    pred_set = {"1", "2", "4", "5"}
+    overlap = 3
+    overlap_set = {"1", "2", "4"}
+    target_minus_pred = 2
+    t_m_p_set = {"3", "6"}
+    pred_minus_target = 1
+    p_m_t_set = {"5"}
+    golds = (target_card, target_set,
+             pred_card, pred_set,
+             overlap, overlap_set,
+             target_minus_pred, t_m_p_set,
+             pred_minus_target, p_m_t_set)
+    result = metrics.label_set_stats(
+        None,
+        predicted_labels,
+        "m",
+        display_sets=True)["m label stats"].textdata
+    for line, metric in zip(result.split("\n\n"), golds):
+      self.assertEqual(
+          ast.literal_eval(line.rsplit(":", maxsplit=1)[1].strip()), metric)
 
 
 if __name__ == "__main__":

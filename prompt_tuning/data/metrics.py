@@ -23,6 +23,7 @@ hands it off to a real metric function. There are also metric functions that
 produce a Text object that will be written to tensorboard.
 """
 
+import itertools
 import random
 import textwrap
 from typing import Sequence, Optional, Dict, List, Mapping, Any
@@ -77,6 +78,72 @@ def format_qa(indices: Sequence[int],
       """.lstrip("\n"))
     texts.append(example_text)
   return "\n\n".join(texts)
+
+
+def label_set_stats(
+    targets,
+    predictions,
+    task_name: str,
+    target_field: str = constants.TARGET_TEXT,
+    prediction_field: str = constants.PREDICTION_TEXT,
+    display_sets: bool = False,
+) -> Dict[str, seqio.metrics.Text]:
+  """Measure the number of invalid predictions.
+
+  The "target label set" should not change through evaluation, it is just the
+  set of gold labels in your validation split.
+
+  The "prediction label set" will change as your model predicts different values
+  between epochs.
+
+  "target ∩ prediction" != "len(target)" means your model is systematically
+  missing some label. "target - prediction" != 0 means the same thing.
+
+  "prediction - target" != 0 means that your model is hallucinating a label that
+  is not included in the target label set.
+
+  Args:
+    targets: The postprocessed targets, unused.
+    predictions: The postprocessed predictions, as dicts.
+    task_name: The name of the task these predictions came from.
+    target_field: The dict key to access the pre-tokenized target.
+    prediction_field: The dict key to access the pre-tokenized prediction.
+    display_sets: Whether to display the actual values of the set of
+      target/prediction labels.
+
+  Returns:
+    A Text metric with summary information about the sets of gold and predicted
+    labels.
+  """
+  del targets
+  target_labels = {six.ensure_text(p[target_field]) for p in predictions}
+  prediction_labels = {six.ensure_text(p[prediction_field])
+                       for p in predictions}
+  outputs = [
+      f"target label set cardinality: {len(target_labels)}",
+      f"prediction label set cardinality: {len(prediction_labels)}",
+      ("target ∩ prediction cardinality: "
+       f"{len(target_labels & prediction_labels)}"),
+      ("target - prediction cardinality: "
+       f"{len(target_labels - prediction_labels)}"),
+      ("prediction - target cardinality: "
+       f"{len(prediction_labels - target_labels)}"),
+  ]
+  if display_sets:
+    sets = [
+        f"target label set: {target_labels}",
+        f"prediction label set: {prediction_labels}",
+        f"target ∩ prediction: {target_labels & prediction_labels}",
+        f"target - prediction: {target_labels - prediction_labels}",
+        f"prediction - target: {prediction_labels - target_labels}",
+    ]
+    # Interleave the cardinality and set values in the output list.
+    outputs = list(itertools.chain(*zip(outputs, sets)))
+  return {
+      f"{task_name} label stats": seqio.metrics.Text(
+          textdata="\n\n".join(outputs)
+      )
+  }
 
 
 def safe_sample(num_examples: int,
