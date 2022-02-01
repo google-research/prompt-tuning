@@ -107,6 +107,28 @@ class PostprocessorsTest(absltest.TestCase):
     func3.assert_called_once_with(
         return_two, "slip this in", extra_arg=extra_arg1)
 
+  def test_postprocess_input_is_dict(self):
+    example = {"prediction": "This is my prediction",
+               "from_example": "Make sure this is in there",
+               "not_grabbed": "We shouldn't need this"}
+    postproc_example = {
+        "dummy_prediction": " ".join(example["prediction"].split()[:-1]),
+        "from_previous": "need me!"}
+    result = postprocessors.postprocess_with_examples(
+        lambda x, *a, **kw: x[::-1],
+        postproc_example,
+        example_fields=("from_example", "from_previous"),
+        decoded_model_output_field="dummy_prediction",
+        example=example,
+    )
+    gold = {
+        "prediction": "ym si sihT",
+        "prediction_pretokenized": "This is my",
+        "from_example": example["from_example"],
+        "from_previous": postproc_example["from_previous"]
+    }
+    self.assertEqual(result, gold)
+
 
 if __name__ == "__main__":
   absltest.main()
