@@ -44,6 +44,10 @@ include "prompt_tuning/configs/prompts/from_file.gin"
 # file.
 infer_script.infer.fallback_init_rng = 0
 
+
 # Add partitioning rules for our new axis named `prompt`
 partitioning.ModelBasedPjitPartitioner:
-  logical_axis_rules = @prompt_partitioning.standard_logical_axis_rules()
+  logical_axis_rules = @partitioning.standard_logical_axis_rules()
+
+partitioning.standard_logical_axis_rules:
+  additional_rules = @prompt_partitioning.standard_logical_axis_rules()
