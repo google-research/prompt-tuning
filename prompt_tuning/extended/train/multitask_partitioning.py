@@ -14,14 +14,10 @@
 
 """Custom, default partitioning rules for multitask prompt based models."""
 
-from typing import Optional
+from prompt_tuning.train import partitioning as pt_partitioning
 from t5x import partitioning
 
 
-def standard_logical_axis_rules(
-    rules: Optional[partitioning.LogicalAxisRules] = None
-) -> partitioning.LogicalAxisRules:
+def standard_logical_axis_rules() -> partitioning.LogicalAxisRules:
   """Add multitask prompt partitioning rules."""
-  if rules is None:
-    rules = partitioning.standard_logical_axis_rules()
-  return rules + (("prompt", None), ("tasks", None))
+  return pt_partitioning.standard_logical_axis_rules() + (("tasks", None),)

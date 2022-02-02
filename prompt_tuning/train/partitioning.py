@@ -14,14 +14,9 @@
 
 """Custom, default partitioning rules for prompt based models."""
 
-from typing import Optional
 from t5x import partitioning
 
 
-def standard_logical_axis_rules(
-    rules: Optional[partitioning.LogicalAxisRules] = None
-) -> partitioning.LogicalAxisRules:
+def standard_logical_axis_rules() -> partitioning.LogicalAxisRules:
   """Add prompt specific partitioning rules."""
-  if rules is None:
-    rules = partitioning.standard_logical_axis_rules()
-  return rules + (("prompt", None),)
+  return (("prompt", None),)
