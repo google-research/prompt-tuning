@@ -122,7 +122,7 @@ LOSS_NORMALIZING_FACTOR = None
 
 # Vocabulary (shared by encoder and decoder)
 VOCABULARY = @seqio.SentencePieceVocabulary()
-seqio.SentencePieceVocabulary.sentencepiece_model_file = "/bigstore/t5-data/vocabs/cc_all.32000.100extra/sentencepiece.model"
+seqio.SentencePieceVocabulary.sentencepiece_model_file = "gs://t5-data/vocabs/cc_all.32000.100extra/sentencepiece.model"
 NUM_EMBEDDINGS = 32128
 
 # Model
