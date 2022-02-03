@@ -62,7 +62,7 @@ cd prompt_tuning
 3.  Install the Prompt Tuning library.
 
 ```sh
-python3 -m pip install . -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
+python3 -m pip install .[tpu] -f https://storage.googleapis.com/jax-releases/libtpu_releases.html --use-deprecated=legacy-resolver
 ```
 
 *Note:* If you plan to hack on the internals of prompt tuning and need an

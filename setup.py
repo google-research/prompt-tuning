@@ -34,6 +34,8 @@ def get_version(file_name: str, version_name: str = "__version__") -> str:
 with open("README.md") as fp:
   LONG_DESCRIPTION = fp.read()
 
+_jax_version = "0.2.27"
+
 setuptools.setup(
     name="prompt-tuning",
     version=get_version("prompt_tuning/__init__.py"),
@@ -54,7 +56,7 @@ setuptools.setup(
         "absl-py",
         "flax",
         "gin-config",
-        "jax[tpu]>=0.2.16",
+        f"jax>={_jax_version}",
         "numpy",
         "seqio-nightly",
         "t5",
@@ -71,6 +73,7 @@ setuptools.setup(
         "mt5": [],
         "byt5": [],
         "mrqa": ["pandas"],
+        "tpu": [f"jax[tpu]>={_jax_version}"]
     },
     classifiers=[
         "Development Status :: 4 - Beta",
