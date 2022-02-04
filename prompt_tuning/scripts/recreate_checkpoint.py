@@ -172,7 +172,7 @@ def main(argv: Sequence[str]) -> None:
   # TODO: Add option to configure what optimizer to use.
   optimizer = build_optimizer(checkpoint)
   # Turn the optimizer into the train_state object
-  train_state = train_state_lib.TrainState.from_flax_optimizer(optimizer)
+  train_state = train_state_lib.FlaxOptimTrainState(optimizer)
   train_state = train_state.restore_state(checkpoint)
   checkpointer = checkpoints.Checkpointer(
       train_state,
