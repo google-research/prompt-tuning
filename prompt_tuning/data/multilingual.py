@@ -25,7 +25,7 @@ import seqio
 import t5.data
 from t5.evaluation import metrics
 import tensorflow_datasets as tfds
-
+from google3.third_party.tf_seq2seq.seq2seq.metrics import rouge as seq2seq_rouge
 
 # Global lock used for language detection modules that aren't threadsafe.
 langdetect_lock = threading.Lock()
@@ -47,6 +47,7 @@ class LangDetector:
       return self._detector.FindLanguage(text=text)
 
 _lang_detector = LangDetector()
+
 
 
 # ----- XNLI -----
@@ -218,179 +219,3 @@ for model_prefix, model_features in features.MODEL_TO_FEATURES.items():
       metric_fns=[metrics.bleu, _rouge_fn],
       output_features=model_features)
 
-# ----- WikiLingua -----
-# WikiLingua zero-shot task. The train split consists only of English data and
-# evaluation is done on non-English data. The base evaluation is input:
-# non-EN article and target: EN summary.
-
-# Dictionary mapping language code to language string used in the WikiLingua
-# task definition.
-WIKILINGUA_LANGS = {
-    'ar': 'arabic_ar',
-    'zh': 'chinese_zh',
-    'cs': 'czech_cs',
-    'nl': 'dutch_nl',
-    'en': 'english_en',
-    'fr': 'french_fr',
-    'de': 'german_de',
-    'hi': 'hindi_hi',
-    'id': 'indonesian_id',
-    'it': 'italian_it',
-    'ja': 'japanese_ja',
-    'ko': 'korean_ko',
-    'pt': 'portuguese_pt',
-    'ru': 'russian_ru',
-    'es': 'spanish_es',
-    'th': 'thai_th',
-    'tr': 'turkish_tr',
-    'vi': 'vietnamese_vi'
-}
-
-# Currently, we are not prepending any task name/prefix to each input example
-wikilingua_task_name = None
-wikilingua_prefix = None
-
-for model_prefix, model_features in features.MODEL_TO_FEATURES.items():
-  # English train.
-  t5.data.TaskRegistry.add(
-      f'{model_prefix}pt_wikilingua.english_en_train',
-      t5.data.TfdsTask,
-      tfds_name='gem/wiki_lingua_english_en:1.1.0',
-      splits=['train'],
-      text_preprocessor=[
-          functools.partial(
-              pt_preprocessors.preprocess_text_generation,
-              source_key='source_aligned',
-              target_key='target_aligned',
-              task_name=wikilingua_task_name,
-              prefix=wikilingua_prefix,
-              source_nested_key='en',
-              target_nested_key='en',
-          )
-      ],
-      output_features=model_features,
-      metric_fns=[metrics.rouge])
-
-  # Evaluation on other languages.
-  for split in ['validation', 'test']:
-    for lang_code, lang in WIKILINGUA_LANGS.items():
-      t5.data.TaskRegistry.add(
-          f'{model_prefix}pt_wikilingua_{split}.{lang_code}',
-          t5.data.TfdsTask,
-          tfds_name=f'gem/wiki_lingua_{lang}:1.1.0',
-          splits={'validation': split},
-          text_preprocessor=[
-              functools.partial(
-                  pt_preprocessors.preprocess_text_generation,
-                  source_key='source_aligned',
-                  target_key='target_aligned',
-                  task_name=wikilingua_task_name,
-                  prefix=wikilingua_prefix,
-                  source_nested_key=lang_code,
-                  target_nested_key=lang_code,
-              )
-          ],
-          output_features=model_features,
-          metric_fns=[metrics.rouge])
-
-  # Useful eval subsets for evaluation during training that takes 250 examples
-  # from the original evaluation set for each language
-  for lang_code, lang in WIKILINGUA_LANGS.items():
-    t5.data.TaskRegistry.add(
-        f'{model_prefix}pt_wikilingua_eval_subset.{lang_code}',
-        t5.data.TfdsTask,
-        tfds_name=f'gem/wiki_lingua_{lang}:1.1.0',
-        splits={'validation': 'validation[:250]'},
-        text_preprocessor=[
-            functools.partial(
-                pt_preprocessors.preprocess_text_generation,
-                source_key='source_aligned',
-                target_key='target_aligned',
-                task_name=wikilingua_task_name,
-                prefix=wikilingua_prefix,
-                source_nested_key=lang_code,
-                target_nested_key=lang_code,
-            )
-        ],
-        output_features=model_features,
-        metric_fns=[metrics.rouge])
-
-  t5.data.MixtureRegistry.add(
-      f'{model_prefix}pt_wikilingua_zeroshot',
-      ([f'{model_prefix}pt_wikilingua.english_en_train'] +
-       [f'{model_prefix}pt_wikilingua_validation.{lang_code}'
-        for lang_code in WIKILINGUA_LANGS.keys()]),
-      default_rate=1.0)
-
-  t5.data.MixtureRegistry.add(
-      f'{model_prefix}pt_wikilingua_all_xx_eval_subsets', ([
-          f'{model_prefix}pt_wikilingua_eval_subset.{lang_code}'
-          for lang_code in WIKILINGUA_LANGS.keys()
-          if lang_code != 'en'
-      ]),
-      default_rate=1.0)
-
-  t5.data.MixtureRegistry.add(
-      f'{model_prefix}pt_wikilingua_zeroshot_eval_subset',
-      ([f'{model_prefix}pt_wikilingua.english_en_train',
-        f'{model_prefix}pt_wikilingua_eval_subset.en',
-        f'{model_prefix}pt_wikilingua_all_xx_eval_subsets',
-        ]),
-      default_rate=1.0)
-
-# ----- mC4 -----
-# Left-to-Right Language Modeling: This task has an empty input and text in the
-# targets. This can be used as the input to a DecoderOnly model, like normal, or
-# it can be used as the input to an EncoderDecoder Model, in which case the
-# inputs will be only a single EOS token. This is akin to just using the decoder
-# of an EncoderDecoder model as a DecoderOnly model.
-#
-# We expect this task to be useful for learning "language prompts" that steer
-# the model toward a specific output language as the only thing the decoder will
-# be able to condition on is the prompt.
-#
-# With the addition of the language filter, training the mixture may fail due
-# to memory issues. Training individual language prompts as separate tasks is
-# recommended to avoid these issues with memory.
-for lang in tfds.text.c4.MC4_LANGUAGES:
-  seqio.TaskRegistry.add(
-      f'mc4_lm.{lang.replace("-", "_")}',
-      source=seqio.TfdsDataSource(
-          tfds_name='c4/multilingual:3.0.1',
-          splits={
-              'train': lang,
-              'validation': f'{lang}-validation',
-          }
-      ),
-      preprocessors=[
-          functools.partial(
-              pt_preprocessors.filter_langid,
-              lang_code=lang,
-              lang_detector=_lang_detector),
-          functools.partial(
-              t5.data.preprocessors.rekey,
-              key_map={
-                  'inputs': None,
-                  'targets': 'text'
-              }
-          ),
-          seqio.preprocessors.tokenize,
-          seqio.CacheDatasetPlaceholder(),
-          seqio.preprocessors.append_eos_after_trim,
-      ],
-      postprocess_fn=None,
-      metric_fns=[],
-      output_features=features.MT5_FEATURES
-  )
-
-DEFAULT_TEMPERATURE = 1.0 / 0.3
-DEFAULT_MIX_RATE = functools.partial(
-    t5.data.rate_num_examples, temperature=DEFAULT_TEMPERATURE
-)
-
-seqio.MixtureRegistry.add(
-    'mc4_lm',
-    [f'mc4_lm.{lang.replace("-", "_")}'
-     for lang in tfds.text.c4.MC4_LANGUAGES],
-    default_rate=DEFAULT_MIX_RATE
-)
