@@ -62,7 +62,7 @@ def match_any(regexes: Sequence[str]) -> Callable[[str, Any], bool]:
 
 
 def np_save(path: str, arr) -> None:
-  """Write a numpy file to disk, supporting things like /cns or /xfile."""
+  """Write a numpy file to disk, supporting remote file systems."""
   with gfile.GFile(path, 'wb') as wf:
     np.save(wf, arr)
 
@@ -99,7 +99,7 @@ class Checkpointer(checkpoints.Checkpointer):
         self.checkpoints_dir, 'numpy_checkpoints', f'checkpoint_{step}')
     # Write to a tmp dir to create an atomic checkpointing operation.
     timestamp = multihost_utils.broadcast_one_to_all(np.int32(time.time()))
-    tmp_dir = numpy_dir + f'.tmp-{timestamp}'
+    tmp_dir = f'{numpy_dir}.tmp-{timestamp}'
     logging.info('Saving Numpy checkpoints for step %d to %s', step, tmp_dir)
     if jax.process_index() == 0:
       gfile.makedirs(tmp_dir)
@@ -120,7 +120,16 @@ class Checkpointer(checkpoints.Checkpointer):
                                  f'{tmp_dir}')
     if jax.process_index() != 0:
       return
-    gfile.rename(tmp_dir, numpy_dir)
+    if gfile.exists(numpy_dir):
+      backup_dir = f'{numpy_dir}.backup-{time.time()}'
+      logging.info('%s already exists. This suggests that there was an error '
+                   '(or preemption) between saving the numpy checkpoint and '
+                   'the T5X checkpoint during the last save and that this is '
+                   'a rerun. Moving that old checkpoint to %s',
+                   numpy_dir,
+                   backup_dir)
+      gfile.rename(numpy_dir, backup_dir)
+    gfile.rename(tmp_dir, numpy_dir, overwrite=True)
     logging.info('Saved Numpy Arrays for step %d to %s', step, numpy_dir)
 
   # TODO: See if the `state_transformation_fns` can replace our
