@@ -34,6 +34,7 @@ for prompt tuning, but easy to overlook, are being used. Some of these include:
 
 import os
 import re
+import textwrap
 from absl import flags
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -70,19 +71,31 @@ class PromptsTrainTest(parameterized.TestCase):
       dict(
           testcase_name="prompt_t5_1_1_tiny",
           config="prompt_tuning/configs/test/train_t5_1_1_tiny_prompt.gin",
+          run_config="prompt_tuning/configs/runs/prompt_finetune.gin",
           change_regex=".*/prompt/.*"),
       dict(
           testcase_name="multitask_t5_1_1_tiny",
           config="prompt_tuning/configs/extended/test/train_multi_task_t5_1_1_tiny_prompt.gin",
+          run_config="prompt_tuning/configs/extended/runs/multitask_prompt_finetune.gin",
           change_regex=".*/(shared_prompt|task_prompts)/.*"),
   ])
-  def test_only_prompts_are_updated(self, config, change_regex):
+  def test_only_prompts_are_updated(self, config, run_config, change_regex):
     gin.clear_config(clear_constants=True)
     # Create references to gin configurable versions of our model and the
     # partition config.
-    configured_partitioner = gin.configurable(partitioning.PjitPartitioner)
+    configured_partitioner = gin.configurable(
+        partitioning.ModelBasedPjitPartitioner)
     # Parse the gin file.
-    gin.parse_config_files_and_bindings([config], "")
+    # Set all the required things that we don't use, but get pulled in through
+    # the run configs (which we need because it configures partitioning.
+    bindings = textwrap.dedent("""
+        INITIAL_CHECKPOINT_PATH=''
+        MIXTURE_OR_TASK_NAME=''
+        TASK_FEATURE_LENGTHS=''
+        TRAIN_STEPS=''
+        MODEL_DIR=''
+        """)
+    gin.parse_config_files_and_bindings([config, run_config], bindings)
     model = gin.query_parameter("%MODEL").scoped_configurable_fn()
     # Our `configured_(model|partition_cfg)` has now been populated by gin, as
     # if its arguments were applied during the parsing. Now we can call it with
@@ -173,7 +186,8 @@ class PromptsTrainTest(parameterized.TestCase):
   ])
   def test_prompt_loading(self, config, checkpoint):
     gin.clear_config(clear_constants=True)
-    configured_partitioner = gin.configurable(partitioning.PjitPartitioner)
+    configured_partitioner = gin.configurable(
+        partitioning.ModelBasedPjitPartitioner)
     configured_checkpoint_cfg = gin.configurable(utils.CheckpointConfig)
     checkpoint = os.path.join(FLAGS.test_srcdir, TEST_DATA, checkpoint)
     gin.parse_config_files_and_bindings(

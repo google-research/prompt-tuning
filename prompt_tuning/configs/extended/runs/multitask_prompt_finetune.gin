@@ -52,4 +52,7 @@ utils.SaveCheckpointConfig:
   keep = 1
 
 partitioning.ModelBasedPjitPartitioner:
-  logical_axis_rules = @multitask_prompt_partitioning.standard_logical_axis_rules()
+  logical_axis_rules = @partitioning.standard_logical_axis_rules()
+
+partitioning.standard_logical_axis_rules:
+  additional_rules = @multitask_prompt_partitioning.standard_logical_axis_rules()

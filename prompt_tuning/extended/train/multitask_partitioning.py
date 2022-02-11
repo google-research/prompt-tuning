@@ -20,4 +20,5 @@ from t5x import partitioning
 
 def standard_logical_axis_rules() -> partitioning.LogicalAxisRules:
   """Add multitask prompt partitioning rules."""
-  return pt_partitioning.standard_logical_axis_rules() + (("tasks", None),)
+  return pt_partitioning.standard_logical_axis_rules() + (
+      ("tasks", None), ("prompt+embed", None))

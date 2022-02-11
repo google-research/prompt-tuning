@@ -50,6 +50,7 @@ def standard_logical_factor_rules(rules=None):
   rules = unfreeze(rules)
   rules['prompt'] = adafactor.FactorDim.NONE
   rules['tasks'] = adafactor.FactorDim.NONE
+  rules['prompt+embed'] = adafactor.FactorDim.NONE
   return freeze(rules)
 
 
