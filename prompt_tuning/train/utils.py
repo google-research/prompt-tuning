@@ -74,6 +74,10 @@ class MultiOptimizer(optim.MultiOptimizer):
   `*traversals_and_optimizers` parameter for the MultiOptimizer. This subclass
   facilitates binding to this parameter by accepting a sequence as the value for
   a single parameter, which is when unpacked in the super call.
+
+  Note:
+    This optimizer does not work with the t5x version of adafactor and should
+    only be used with a normal flax optimizer.
   """
 
   def __init__(
