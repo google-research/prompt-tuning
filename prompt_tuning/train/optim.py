@@ -96,6 +96,9 @@ def update_subtree_of_traversal(traversal, tree, update):
 class MultiOptimizer(OptimizerDef):
   """Optimize subsets of parameters.
 
+  Note:
+    This MultiOptimizer should only be used with the t5x version of adafactor.
+
   A MultiOptimizer is subclass of :class:`OptimizerDef` and useful for applying
   separate optimizer algorithms to various subsets of the model parameters.
 

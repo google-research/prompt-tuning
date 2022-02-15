@@ -70,6 +70,10 @@ def np_save(path: str, arr) -> None:
 class MultiOptimizer(optim.MultiOptimizer):
   """A MultiOptimizer subclass to support gin.
 
+  Note:
+    This optimizer does not work with the t5x version of adafactor and should
+    only be used with a normal flax optimizer.
+
   Gin doesn't support binding to variadic parameters, like the
   `*traversals_and_optimizers` parameter for the MultiOptimizer. This subclass
   facilitates binding to this parameter by accepting a sequence as the value for
