@@ -1,7 +1,8 @@
-# Initialize the Prompt based on the class labels
+# Initialize the Prompt based on the class labels where the embeddings are
+# loaded from the initial model checkpoint `INITIAL_CHECKPOINT_PATH`.
 # Provides PROMPT
 #
-# Requires PROMPT_LENGTH, VOCABULARY, EMBEDDING_FILE, and CLASS_LABELS to be
+# Requires PROMPT_LENGTH, VOCABULARY, and CLASS_LABELS to be
 # set.
 #
 # Include as a --gin_file argument after the `models/*.gin` arguments.
