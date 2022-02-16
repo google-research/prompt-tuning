@@ -1,9 +1,8 @@
 # Initialize the Prompt based on sampling from the vocabulary where the
-# embeddings are loaded from the initial model checkpoint
-# `INITIAL_CHECKPOINT_PATH`.
+# embeddings are loaded from a saved numpy file.
 # Provides PROMPT
 #
-# Requires PROMPT_LENGTH to be set.
+# Requires PROMPT_LENGTH and EMBEDDING_FILE to be set.
 #
 # Include as a --gin_file argument after the `models/*.gin` arguments.
 from __gin__ import dynamic_registration
@@ -21,9 +20,10 @@ prompts.Prompt:
   prompt_init = @prompt_init/prompts.from_sample_of_embeddings()
 
 prompt_init/prompts.from_sample_of_embeddings:
-  embeddings = @prompt_init/prompts.t5x_load()
+  embeddings = @prompt_init/prompts.np_load()
   population_size = 5000
 
-prompt_init/prompts.t5x_load:
-  checkpoint_path = %INITIAL_CHECKPOINT_PATH
-  variable_path = "token_embedder/embedding"
+prompt_init/prompts.np_load.path = %EMBEDDING_FILE
+
+# Then set overrides in the launch script:
+# --gin.EMBEDDING_FILE="'/path/to/numpy/embeddings/t5_1_1_lm_adaptation/xxl.npy'" \

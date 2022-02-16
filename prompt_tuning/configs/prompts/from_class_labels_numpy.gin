@@ -1,4 +1,5 @@
-# Initialize the Prompt based on the class labels
+# Initialize the Prompt based on the class labels where the embeddings are
+# loaded from a saved numpy file.
 # Provides PROMPT
 #
 # Requires PROMPT_LENGTH, VOCABULARY, EMBEDDING_FILE, and CLASS_LABELS to be
