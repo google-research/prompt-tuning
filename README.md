@@ -343,8 +343,11 @@ first `n` embeddings with the
 
 This can be used with
 [`--gin_file=prompt_tuning/configs/prompts/from_sampled_vocab.gin`](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/configs/prompts/from_sampled_vocab.gin).
+This method uses the embedding table extracted from the initial model
+checkpoint. You can also provide your own embedding file with
+[`--gin_file=prompt_tuning/configs/prompts/from_sampled_vocab_numpy.gin`](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/configs/prompts/from_sampled_vocab_numpy.gin).
 This method requires that you provide a value for `EMBEDDING_FILE` that is a
-numpy array of the models embedding table. This can be extracted from a model
+numpy array of the model's embedding table. This can be extracted from a model
 checkpoint using
 [prompt_tuning.scripts.extract_variable](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/scripts/extract_variable.py).
 
@@ -362,9 +365,11 @@ We can match the paper, where unfilled prompt tokens are filled by sampling from
 the embedding table, by composing this initialization with the one above. It can
 be used with
 [`--gin_file=prompt_tuning/configs/prompts/from_class_labels.gin`](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/configs/prompts/from_class_labels.gin).
-This requires setting an `EMBEDDING_FILE` (which is the same as above) and
-`CLASS_LABELS`, which is a list of the words that you want to embed as prompt
-initialization.
+This requires setting `CLASS_LABELS`, which is a list of the words that you want
+to embed as prompt initialization. You can also provide your own embedding file
+(which is the same as above) with
+[`--gin_file=prompt_tuning/configs/prompts/from_class_labels_numpy.gin`](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/configs/prompts/from_class_labels_numpy.gin).
+This additionally requires setting `EMBEDDING_FILE`.
 
 **From String**
 
