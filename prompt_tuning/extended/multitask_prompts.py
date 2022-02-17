@@ -307,7 +307,7 @@ class MultiTaskPrompt(nn.Module):
   get_task_size: GetTaskSize = None
   combine_shared_and_tasks: Combine = None
   shared_prompt_axis_names: Tuple[str, str] = ("prompt", "embed")
-  individual_prompt_axis_names: Tuple[str, str] = ("tasks", "embed")
+  individual_prompt_axis_names: Tuple[str, str] = ("tasks", "prompt+embed")
 
   def setup(self):
     if self.combine_shared_and_tasks is None:
@@ -350,7 +350,8 @@ class MultiTaskPrompt(nn.Module):
         cast_input_dtype=jnp.int32,
         axes=self.individual_prompt_axis_names,
         name="task_prompts")(
-            task_idx)
+            task_idx,
+            input_axis_names=("batch",))
 
     # Combine the shared and task specific prompts.
     prompt = self.combine_shared_and_tasks(shared_prompt, task_prompts)  # pylint: disable=not-callable

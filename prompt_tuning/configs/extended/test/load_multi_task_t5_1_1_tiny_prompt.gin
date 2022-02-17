@@ -9,7 +9,7 @@ from __gin__ import dynamic_registration
 from t5x import utils
 from t5x import partitioning
 
-include 'prompt_tuning/configs/runs/prompt_finetune.gin'
+include 'prompt_tuning/configs/extended/runs/multitask_prompt_finetune.gin'
 include 'prompt_tuning/configs/extended/test/multi_task_t5_1_1_tiny_prompt.gin'
 
 MODEL_DIR = "/tmp"  # Will be overridden in test.
