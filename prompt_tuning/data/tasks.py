@@ -29,11 +29,6 @@ tensorboard.
 # pylint: disable=unused-import,g-import-not-at-top
 from prompt_tuning.data import glue
 from prompt_tuning.data import glue_transfer
-try:
-  # Multilingual tasks require mt5 to be installed which we don't want to force.
-  from prompt_tuning.data import multilingual
-except ImportError:
-  pass
 from prompt_tuning.data import qa
 from prompt_tuning.data import summarization
 from prompt_tuning.data import super_glue
