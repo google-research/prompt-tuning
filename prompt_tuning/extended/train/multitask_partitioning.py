@@ -14,11 +14,12 @@
 
 """Custom, default partitioning rules for multitask prompt based models."""
 
+import itertools
 from prompt_tuning.train import partitioning as pt_partitioning
 from t5x import partitioning
 
 
 def standard_logical_axis_rules() -> partitioning.LogicalAxisRules:
   """Add multitask prompt partitioning rules."""
-  return pt_partitioning.standard_logical_axis_rules() + (
-      ("tasks", None), ("prompt+embed", None))
+  return tuple(itertools.chain(pt_partitioning.standard_logical_axis_rules(),
+                               (("tasks", None), ("prompt+embed", None))))
