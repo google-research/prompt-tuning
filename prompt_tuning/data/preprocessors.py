@@ -19,7 +19,8 @@ initial text token of the input. This lets us get a version of the t5
 (Super)?GLUE tasks without having to fork their preprocessors.
 """
 
-from typing import Optional, Sequence
+import functools
+from typing import Optional, Sequence, Mapping, Union, Tuple
 import seqio
 import t5.data.preprocessors
 import tensorflow.compat.v2 as tf
@@ -28,6 +29,7 @@ _string_join = t5.data.preprocessors._string_join  # pylint: disable=protected-a
 _pad_punctuation = t5.data.preprocessors._pad_punctuation  # pylint: disable=protected-access
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
+SequenceLengthType = Mapping[str, Union[int, Tuple[int, int]]]
 
 
 # ========== Text Preprocessors ==========
@@ -86,6 +88,21 @@ def preprocess_tsv_to_qa(line,
   example['answers'] = _pad_punctuation(
       tf.strings.split([example['answers']], answer_delim).values)
   return example
+
+
+@seqio.map_over_dataset
+def mrqa(example):
+  """Prepare the MRQA datasets to match SQUAD formatting."""
+  new_ex = {}
+  new_ex['idx'] = example['qid']
+  new_ex['question'] = _pad_punctuation(example['question'])
+  new_ex['context'] = _pad_punctuation(example['context'])
+  new_ex['answer'] = _pad_punctuation(example['answers'][0])
+  new_ex['answers'] = _pad_punctuation(example['answers'])
+  new_ex['inputs'] = _string_join(
+      ['question:', new_ex['question'], 'context:', new_ex['context']])
+  new_ex['targets'] = new_ex['answer']
+  return new_ex
 
 
 @seqio.map_over_dataset
@@ -229,3 +246,91 @@ def filter_langid(dataset,
   dataset = dataset.filter(
       lambda x: tf.numpy_function(filter_fn, [x[text_key]], tf.bool))
   return dataset
+
+
+# TODO: Look into deleting whole words.
+def token_deletion(
+    ds: tf.data.Dataset,
+    sequence_length: SequenceLengthType,
+    output_features: seqio.preprocessors.OutputFeaturesType,
+    noise_density: float = 0.15
+) -> tf.data.Dataset:
+  """Similar to the BART (Lewis et. al., 2019) token deletion pre-training task.
+
+
+  Args:
+    ds: The dataset to noise, should have a `targets` field.
+    sequence_length: The max length allowed for each feature.
+    output_features: The features (vocab, etc) used for each field.
+    noise_density: How much of the text should end up being noised out.
+
+  Returns:
+    A dataset where random tokens have been deleted from the `inputs` field,
+    and the original sentence in the `targets` field.
+  """
+  ds = t5.data.preprocessors.select_random_chunk(
+      ds,
+      output_features=output_features,
+      feature_key='targets',
+      max_length=65536)
+  ds = t5.data.preprocessors.split_tokens_to_inputs_length(
+      ds, output_features=output_features, sequence_length=sequence_length)
+
+  ds = t5.data.preprocessors.denoise(
+      ds,
+      output_features,
+      inputs_fn=t5.data.preprocessors.drop_noise_tokens,
+      targets_fn=None,
+      noise_density=noise_density,
+      noise_mask_fn=t5.data.preprocessors.iid_noise_mask
+  )
+  return ds
+
+
+def text_infilling(
+    ds: tf.data.Dataset,
+    sequence_length: SequenceLengthType,
+    output_features: seqio.preprocessors.OutputFeaturesType,
+    noise_density: float = 0.15,
+    mean_noise_span_length: int = 3
+) -> tf.data.Dataset:
+  r"""Like the BART (Lewis et. al., 2019) text infilling pre-training task.
+
+  Note:
+    We use unique sentinel tokens instead of a single one.
+
+
+  Args:
+    ds: The dataset to noise, should have a `targets` field.
+    sequence_length: The max length allowed for each feature.
+    output_features: The features (vocab, etc) used for each field.
+    noise_density: How much of the text should end up being noised out.
+    mean_noise_span_length: How long the mean span is.
+
+  Returns:
+    A dataset where random spans have been masked out of the `inputs` field,
+    replaced by <extra_id_\d> and the original sentence in the `targets` field.
+  """
+  ds = t5.data.preprocessors.select_random_chunk(
+      ds,
+      output_features=output_features,
+      feature_key='targets',
+      max_length=65536)
+  ds = t5.data.preprocessors.split_tokens_to_inputs_length(
+      ds, output_features=output_features, sequence_length=sequence_length)
+
+  ds = t5.data.preprocessors.denoise(
+      ds,
+      output_features,
+      # Use <extra_id_\d> instead of a single mask token (like they do in BART)
+      # so that we can't tell it apart from the normal span corruption task
+      # without looking at the targets.
+      inputs_fn=t5.data.preprocessors.noise_span_to_unique_sentinel,
+      targets_fn=None,
+      noise_density=noise_density,
+      noise_mask_fn=functools.partial(
+          t5.data.preprocessors.random_spans_noise_mask,
+          mean_noise_span_length=mean_noise_span_length
+      )
+  )
+  return ds
