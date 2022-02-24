@@ -52,7 +52,7 @@ utils.SaveCheckpointConfig:
   keep = 1
 
 
-partitioning.ModelBasedPjitPartitioner:
+partitioning.PjitPartitioner:
   logical_axis_rules = @partitioning.standard_logical_axis_rules()
 
 partitioning.standard_logical_axis_rules:
