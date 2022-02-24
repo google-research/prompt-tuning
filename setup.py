@@ -54,7 +54,7 @@ setuptools.setup(
     scripts=[],
     install_requires=[
         "absl-py",
-        "flax",
+        "flax @ git+https://github.com/google/flax#egg=flax",
         "gin-config",
         f"jax>={_jax_version}",
         "numpy",
