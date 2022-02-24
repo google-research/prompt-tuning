@@ -32,5 +32,5 @@ python3 -m t5x.train \
   --gin.TRAIN_STEPS="1_150_000" \
   --gin.USE_CACHED_TASKS="False" \
   --gin.BATCH_SIZE="32" \
-  --gin.partitioning.ModelBasedPjitPartitioner.model_parallel_submesh="(4, 4, 1, 2)" \
+  --gin.partitioning.PjitPartitioner.model_parallel_submesh="(4, 4, 1, 2)" \
   --tfds_data_dir=${TFDS_DATA_DIR}
