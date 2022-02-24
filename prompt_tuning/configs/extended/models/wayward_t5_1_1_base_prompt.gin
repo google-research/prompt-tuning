@@ -63,12 +63,10 @@ wayward.WaywardPromptEncoderDecoderModel:
   z_loss = %Z_LOSS
   label_smoothing = %LABEL_SMOOTHING
   loss_normalizing_factor = %LOSS_NORMALIZING_FACTOR
-
-wayward.WaywardPromptEncoderDecoderModel.loss_fn:
-  gamma = 0.01
   distance = @wayward.squared_l2_distance
   discrete_prompt = @prompt_init/wayward.execute_initializer()
   prompt_path = "encoder/prompt/prompt/prompt"
+  gamma = 0.01
 
 prompt_init/wayward.execute_initializer:
   init = @prompt_init/prompts.from_embedded_string()
