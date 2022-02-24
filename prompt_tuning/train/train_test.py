@@ -83,8 +83,7 @@ class PromptsTrainTest(parameterized.TestCase):
     gin.clear_config(clear_constants=True)
     # Create references to gin configurable versions of our model and the
     # partition config.
-    configured_partitioner = gin.configurable(
-        partitioning.ModelBasedPjitPartitioner)
+    configured_partitioner = gin.configurable(partitioning.PjitPartitioner)
     # Parse the gin file.
     # Set all the required things that we don't use, but get pulled in through
     # the run configs (which we need because it configures partitioning.
@@ -187,7 +186,7 @@ class PromptsTrainTest(parameterized.TestCase):
   def test_prompt_loading(self, config, checkpoint):
     gin.clear_config(clear_constants=True)
     configured_partitioner = gin.configurable(
-        partitioning.ModelBasedPjitPartitioner)
+        partitioning.PjitPartitioner)
     configured_checkpoint_cfg = gin.configurable(utils.CheckpointConfig)
     checkpoint = os.path.join(FLAGS.test_srcdir, TEST_DATA, checkpoint)
     gin.parse_config_files_and_bindings(
