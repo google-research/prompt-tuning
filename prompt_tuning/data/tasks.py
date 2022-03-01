@@ -27,6 +27,8 @@ tensorboard.
 """
 
 # pylint: disable=unused-import,g-import-not-at-top
+# pytype: disable=import-error
+from prompt_tuning.data import c4
 from prompt_tuning.data import glue
 from prompt_tuning.data import glue_transfer
 from prompt_tuning.data import qa
