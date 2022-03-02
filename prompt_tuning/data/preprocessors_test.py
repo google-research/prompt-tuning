@@ -14,20 +14,38 @@
 
 """Tests for preprocessors."""
 
+import os
 import textwrap
 import unittest.mock as mock
 from absl.testing import parameterized
 import numpy as np
-from prompt_tuning.data import features
 from prompt_tuning.data import preprocessors
+import seqio
 from seqio import test_utils
 import tensorflow.compat.v2 as tf
 import tensorflow_datasets as tfds
 
 
+TEST_DATA = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "test_data")
+
+
 INPUTS_SIZE = 10
 TARGETS_SIZE = 5
 TEXT_SIZE = 10
+
+
+TEST_T5_FEATURES = {
+    "inputs": seqio.Feature(
+        vocabulary=seqio.SentencePieceVocabulary(
+            os.path.join(TEST_DATA, "t5_vocab"), 100),
+        add_eos=True,
+        required=False),
+    "targets": seqio.Feature(
+        vocabulary=seqio.SentencePieceVocabulary(
+            os.path.join(TEST_DATA, "t5_vocab"), 100),
+        add_eos=True)
+}
 
 
 def create_fake_text_dataset(examples: int = 10, text_size: int = TEXT_SIZE):
@@ -150,7 +168,7 @@ class BARTTaskTest(parameterized.TestCase):
     ds = create_fake_text_dataset()
     ds = preprocessor(ds,
                       {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
-                      features.T5_FEATURES,
+                      TEST_T5_FEATURES,
                       noise_density=0.5)
     for ex in tfds.as_numpy(ds):
       self.assertLess(ex["inputs"].shape[0], ex["targets"].shape[0])
@@ -164,9 +182,9 @@ class BARTTaskTest(parameterized.TestCase):
     ds = create_fake_text_dataset()
     ds = preprocessor(ds,
                       {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
-                      features.T5_FEATURES,
+                      TEST_T5_FEATURES,
                       noise_density=0.5)
-    vocab = features.T5_FEATURES["targets"].vocabulary
+    vocab = TEST_T5_FEATURES["targets"].vocabulary
     for ex in tfds.as_numpy(ds):
       targets_text = vocab.decode(ex["targets"].tolist())
       self.assertNotIn("extra_id", targets_text)
@@ -181,7 +199,7 @@ class BARTTaskTest(parameterized.TestCase):
     processed_ds = preprocessor(
         ds,
         {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
-        features.T5_FEATURES,
+        TEST_T5_FEATURES,
         noise_density=0.5)
     for processed_ex, ex in zip(tfds.as_numpy(processed_ds), tfds.as_numpy(ds)):
       np.testing.assert_array_equal(processed_ex["targets"], ex["targets"])
@@ -191,9 +209,9 @@ class BARTTaskTest(parameterized.TestCase):
     ds = preprocessors.token_deletion(
         ds,
         {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
-        features.T5_FEATURES,
+        TEST_T5_FEATURES,
         noise_density=0.5)
-    vocab = features.T5_FEATURES["inputs"].vocabulary
+    vocab = TEST_T5_FEATURES["inputs"].vocabulary
     for ex in tfds.as_numpy(ds):
       inputs_text = vocab.decode(ex["inputs"].tolist())
       self.assertNotIn("extra_id", inputs_text)
@@ -203,9 +221,9 @@ class BARTTaskTest(parameterized.TestCase):
     ds = preprocessors.text_infilling(
         ds,
         {"inputs": INPUTS_SIZE + 1, "targets": TARGETS_SIZE + 1},
-        features.T5_FEATURES,
+        TEST_T5_FEATURES,
         noise_density=0.5)
-    vocab = features.T5_FEATURES["inputs"].vocabulary
+    vocab = TEST_T5_FEATURES["inputs"].vocabulary
     for ex in tfds.as_numpy(ds):
       inputs_text = vocab.decode(ex["inputs"].tolist())
       self.assertIn("extra_id", inputs_text)
