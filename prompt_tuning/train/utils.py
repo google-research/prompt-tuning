@@ -27,9 +27,9 @@ import flax
 from flax import optim
 from flax import traverse_util
 import jax
+from jax.experimental import multihost_utils
 import numpy as np
 from t5x import checkpoints
-from t5x import multihost_utils
 from t5x import partitioning
 from t5x import train_state as train_state_lib
 from tensorflow.io import gfile
@@ -107,7 +107,8 @@ class Checkpointer(checkpoints.Checkpointer):
     logging.info('Saving Numpy checkpoints for step %d to %s', step, tmp_dir)
     if jax.process_index() == 0:
       gfile.makedirs(tmp_dir)
-    multihost_utils.sync_devices(f'checkpointer:save_numpy:make_dir:{tmp_dir}')
+    multihost_utils.sync_global_devices(
+        f'checkpointer:save_numpy:make_dir:{tmp_dir}')
 
     if jax.process_index() == 0:
       # Save any variable whose name matches.
@@ -120,8 +121,8 @@ class Checkpointer(checkpoints.Checkpointer):
           dotted_name = flat_name.replace('/', '.')
           output_path = os.path.join(tmp_dir, dotted_name)
           np_save(output_path, np.array(value).astype(self._save_dtype))
-    multihost_utils.sync_devices('checkpointer:save_numpy:writes_complete:'
-                                 f'{tmp_dir}')
+    multihost_utils.sync_global_devices(
+        f'checkpointer:save_numpy:writes_complete: {tmp_dir}')
     if jax.process_index() != 0:
       return
     if gfile.exists(numpy_dir):
