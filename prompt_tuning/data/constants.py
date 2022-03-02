@@ -16,7 +16,9 @@
 
 PREDICTION = "prediction"
 PREDICTION_TEXT = "prediction_pretokenized"
+INPUT_FIELD = "inputs"
 INPUT_TEXT = "inputs_pretokenized"
+TARGET_FIELD = "targets"
 TARGET_TEXT = "targets_pretokenized"
 CONTEXT_TEXT = "context"
 QUESTION_TEXT = "question"
