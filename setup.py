@@ -34,7 +34,7 @@ def get_version(file_name: str, version_name: str = "__version__") -> str:
 with open("README.md") as fp:
   LONG_DESCRIPTION = fp.read()
 
-_jax_version = "0.2.27"
+_jax_version = "0.3.1"
 
 setuptools.setup(
     name="prompt-tuning",
