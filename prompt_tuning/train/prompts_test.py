@@ -20,7 +20,7 @@ from absl.testing import parameterized
 import jax
 import jax.numpy as jnp
 import numpy as np
-from prompt_tuning import prompts
+from prompt_tuning import test_utils
 from prompt_tuning.train import prompts as train_prompts
 
 
@@ -106,8 +106,7 @@ class PromptsTest(parameterized.TestCase):
     prompt_length = 5
     batch_size = 2
     seq_len = 20
-    mock_prompt = mock.create_autospec(
-        prompts.Prompt, spec_set=True, instance=True)
+    mock_prompt = mock.MagicMock()
     prompt = jnp.zeros((prompt_length, embed_size))
     mock_prompt.return_value = prompt
     mock_combine = mock.create_autospec(
@@ -117,17 +116,15 @@ class PromptsTest(parameterized.TestCase):
     input_tokens = jnp.ones((batch_size, seq_len))
     embed = jnp.ones((batch_size, seq_len, embed_size))
     prompt_module.apply({"params": {}}, input_tokens, embed)
-    # `.assert_called_once_with` doesn't work for instances returned from
-    # autospec, the error suggest it has something to do with `self` not being
-    # handled correctly, so just check the call itself.
-    self.assertEqual(mock_prompt.call_args_list[0],
-                     mock.call(input_tokens, embed))
     expanded_prompt = jnp.zeros((batch_size, prompt_length, embed_size))
-    # `.assert_called_once_with` doesn't handle comparing arrays that fail the
-    # `is` check (aren't the same object) so we manually check all call args.
-    np.testing.assert_allclose(mock_combine.call_args_list[0][0][0],
-                               expanded_prompt)
-    np.testing.assert_allclose(mock_combine.call_args_list[0][0][1], embed)
+
+    mock_prompt.assert_called_once_with(
+        test_utils.ArrayEqualMatcher(input_tokens),
+        test_utils.ArrayAllCloseMatcher(embed))
+    mock_combine.assert_called_once_with(
+        test_utils.ArrayAllCloseMatcher(expanded_prompt),
+        test_utils.ArrayAllCloseMatcher(embed),
+        test_utils.ArrayEqualMatcher(input_tokens))
 
 
 if __name__ == "__main__":
