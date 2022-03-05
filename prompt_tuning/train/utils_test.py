@@ -15,13 +15,13 @@
 """Tests for utils."""
 
 import inspect
-import operator
 import os
 from unittest import mock
 from absl.testing import absltest
 import flax
 from flax import traverse_util
 import numpy as np
+from prompt_tuning import test_utils
 from prompt_tuning.train import utils
 
 
@@ -34,7 +34,7 @@ def create_fake_parameters():
   for i in range(layers):
     for proj in ('query', 'key', 'value', 'out'):
       parameters[f'encoder/layers_{i}/attention/'
-                 f'{proj}/kernel'] = np.random.rand(qkv, qkv),
+                 f'{proj}/kernel'] = np.random.rand(qkv, qkv)
   parameters['encoder/prompt/prompt'] = np.random.rand(p_length, embed_dim)
   parameters = flax.core.freeze(traverse_util.unflatten_dict(
       {tuple(k.split('/')): v for k, v in parameters.items()}))
@@ -72,20 +72,35 @@ class UtilsTest(absltest.TestCase):
     step = 42
     time = 14
     golds = [
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.layers_0.attention.key.kernel',
-         parameters['encoder']['layers_0']['attention']['key']['kernel']),
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.layers_1.attention.query.kernel',
-         parameters['encoder']['layers_1']['attention']['query']['kernel']),
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.layers_2.attention.value.kernel',
-         parameters['encoder']['layers_2']['attention']['value']['kernel']),
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.layers_3.attention.out.kernel',
-         parameters['encoder']['layers_3']['attention']['out']['kernel']),
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.prompt.prompt', parameters['encoder']['prompt']['prompt'])]
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.layers_0.attention.key.kernel',
+            test_utils.ArrayAllCloseMatcher(
+                parameters
+                ['encoder']['layers_0']['attention']['key']['kernel'])),
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.layers_1.attention.query.kernel',
+            test_utils.ArrayAllCloseMatcher(
+                parameters
+                ['encoder']['layers_1']['attention']['query']['kernel'])),
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.layers_2.attention.value.kernel',
+            test_utils.ArrayAllCloseMatcher(
+                parameters
+                ['encoder']['layers_2']['attention']['value']['kernel'])),
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.layers_3.attention.out.kernel',
+            test_utils.ArrayAllCloseMatcher(
+                parameters
+                ['encoder']['layers_3']['attention']['out']['kernel'])),
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.prompt.prompt',
+            test_utils.ArrayAllCloseMatcher(
+                parameters['encoder']['prompt']['prompt']))]
     variable_paths = ['.*/prompt/.*',
                       '.*/layers_0/.*/key/.*',
                       '.*/layers_1/.*/query/.*',
@@ -105,13 +120,7 @@ class UtilsTest(absltest.TestCase):
         time_mock.return_value = time
         checkpointer.save_numpy(parameters, step=step)
 
-    self.assertLen(save_mock.call_args_list, len(golds))
-    call_args = sorted((call_args[0] for call_args in save_mock.call_args_list),
-                       key=operator.itemgetter(0))
-    for (saved_path, saved_var), gold in zip(call_args, golds):
-      self.assertEqual(saved_path, os.path.join(checkpoint_dir, gold[0]))
-      np.testing.assert_allclose(saved_var,
-                                 np.array(gold[1]).astype(np.float32))
+    save_mock.assert_has_calls(golds)
 
   def test_checkpointer_with_existing_numpy_checkpoint(self):
     parameters = create_fake_parameters()
@@ -120,20 +129,35 @@ class UtilsTest(absltest.TestCase):
     backup_time = 16
     step = 42
     golds = [
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.layers_0.attention.key.kernel',
-         parameters['encoder']['layers_0']['attention']['key']['kernel']),
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.layers_1.attention.query.kernel',
-         parameters['encoder']['layers_1']['attention']['query']['kernel']),
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.layers_2.attention.value.kernel',
-         parameters['encoder']['layers_2']['attention']['value']['kernel']),
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.layers_3.attention.out.kernel',
-         parameters['encoder']['layers_3']['attention']['out']['kernel']),
-        (f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
-         'encoder.prompt.prompt', parameters['encoder']['prompt']['prompt'])]
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.layers_0.attention.key.kernel',
+            test_utils.ArrayAllCloseMatcher(
+                parameters
+                ['encoder']['layers_0']['attention']['key']['kernel'])),
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.layers_1.attention.query.kernel',
+            test_utils.ArrayAllCloseMatcher(
+                parameters
+                ['encoder']['layers_1']['attention']['query']['kernel'])),
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.layers_2.attention.value.kernel',
+            test_utils.ArrayAllCloseMatcher(
+                parameters
+                ['encoder']['layers_2']['attention']['value']['kernel'])),
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.layers_3.attention.out.kernel',
+            test_utils.ArrayAllCloseMatcher(
+                parameters
+                ['encoder']['layers_3']['attention']['out']['kernel'])),
+        mock.call(
+            f'{checkpoint_dir}/numpy_checkpoints/checkpoint_{step}.tmp-{time}/'
+            'encoder.prompt.prompt',
+            test_utils.ArrayAllCloseMatcher(
+                parameters['encoder']['prompt']['prompt']))]
     variable_paths = ['.*/prompt/.*',
                       '.*/layers_0/.*/key/.*',
                       '.*/layers_1/.*/query/.*',
@@ -196,14 +220,7 @@ class UtilsTest(absltest.TestCase):
     backup_dir = f'{dir_already_there}.backup-{backup_time}'
     self.assertTrue(os.path.exists(backup_dir))
 
-    # Check that the final checkpoint is still correct.
-    self.assertLen(save_mock.call_args_list, len(golds))
-    call_args = sorted((call_args[0] for call_args in save_mock.call_args_list),
-                       key=operator.itemgetter(0))
-    for (saved_path, saved_var), gold in zip(call_args, golds):
-      self.assertEqual(saved_path, os.path.join(checkpoint_dir, gold[0]))
-      np.testing.assert_allclose(saved_var,
-                                 np.array(gold[1]).astype(np.float32))
+    save_mock.assert_has_calls(golds)
 
   def test_checkpointer_saves_nothing(self):
     parameters = create_fake_parameters()

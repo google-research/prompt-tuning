@@ -34,6 +34,7 @@ import flax.linen as nn
 import jax
 import jax.numpy as jnp
 from prompt_tuning import masks
+from prompt_tuning import test_utils
 from prompt_tuning.train import layers
 from prompt_tuning.train import layers_fixtures
 from prompt_tuning.train import prompts
@@ -72,8 +73,7 @@ class PromptEncoderTest(absltest.TestCase):
     seq_len = 10
     embed_dim = 100
     input_tokens = jnp.ones((batch_size, seq_len))
-    prompt_mock = mock.create_autospec(
-        prompts.Prompt, spec_set=True, instance=True)
+    prompt_mock = mock.MagicMock()
     embedded_input = jnp.ones((batch_size, seq_len, embed_dim))
     embedding_mock.return_value = embedded_input
     _ = layers.PromptEncoder(
@@ -95,9 +95,9 @@ class PromptEncoderTest(absltest.TestCase):
         prompt_factory=lambda: prompt_mock,
         add_fake_prompt_factory=lambda: mock.Mock(return_value=input_tokens)
     ).init(jax.random.PRNGKey(0), input_tokens),
-    # For some reason, assert_called_once_with doesn't work when using auto-spec
-    self.assertEqual(prompt_mock.call_args_list[0],
-                     mock.call(input_tokens, embedded_input))
+    prompt_mock.assert_called_once_with(
+        test_utils.ArrayEqualMatcher(input_tokens),
+        test_utils.ArrayAllCloseMatcher(embedded_input))
 
   # TODO: Add checks of the computed values so we can detect
   # when a flaxformer change breaks us even if shapes don't change.
@@ -154,8 +154,7 @@ class PromptDecoderTest(absltest.TestCase):
     seq_len = 10
     embed_dim = 100
     input_tokens = jnp.ones((batch_size, seq_len))
-    prompt_mock = mock.create_autospec(
-        prompts.Prompt, spec_set=True, instance=True)
+    prompt_mock = mock.MagicMock()
     embedded_input = jnp.ones((batch_size, seq_len, embed_dim))
     embedding_mock.return_value = embedded_input
     layers.PromptDecoder(
@@ -176,8 +175,9 @@ class PromptDecoderTest(absltest.TestCase):
             input_tokens,
             decode=False,
             method=layers.PromptDecoder.embed_and_combine_inputs)
-    self.assertEqual(prompt_mock.call_args_list[0],
-                     mock.call(input_tokens, embedded_input))
+    prompt_mock.assert_called_once_with(
+        test_utils.ArrayEqualMatcher(input_tokens),
+        test_utils.ArrayAllCloseMatcher(embedded_input))
 
   @mock.patch.object(
       t5_architecture.embedding.MultiEmbed,
@@ -371,8 +371,8 @@ class PromptEncoderDecoderTest(absltest.TestCase):
             decoder_target_tokens=decoder_targets,
             method=layers.PromptEncoderDecoder.decode)
 
-    encoder_decoder_mask = decoder_mock.call_args_list[0][1][
-        "encoder_decoder_mask"]
+    encoder_decoder_mask = (
+        decoder_mock.call_args_list[0][1]["encoder_decoder_mask"])
     for b in range(encoder_decoder_mask.shape[0]):
       encoder_len = encoder_lengths[b] + prompt_length
       decoder_len = decoder_lengths[b]
@@ -418,8 +418,8 @@ class PromptEncoderDecoderTest(absltest.TestCase):
             decode=True,
             method=layers.PromptEncoderDecoder.decode)
 
-    encoder_decoder_mask = decoder_mock.call_args_list[0][1][
-        "encoder_decoder_mask"]
+    encoder_decoder_mask = (
+        decoder_mock.call_args_list[0][1]["encoder_decoder_mask"])
     for b in range(encoder_decoder_mask.shape[0]):
       encoder_len = encoder_lengths[b] + prompt_length
       # Dim 1 of the mask is the head dimension which is always 1 (broadcasted
@@ -489,12 +489,10 @@ class PromptDecoderOnlyTest(absltest.TestCase):
         decode=False,
         prefill=True,
         decoder_causal_attention=decoder_causal)
-    self.assertEqual(
-        decoder_mask_mock.call_args_list[0],
-        mock.call(
-            decoder_target_tokens=target_tokens,
-            decoder_causal_attention=decoder_causal,
-            dtype=jnp.float32))
+    decoder_mask_mock.assert_called_once_with(
+        decoder_target_tokens=test_utils.ArrayEqualMatcher(target_tokens),
+        decoder_causal_attention=test_utils.ArrayEqualMatcher(decoder_causal),
+        dtype=jnp.float32)
 
   def test_decoder_mask_on_train(self):
     # We can't really autospec the closure that the decoder mask factory returns
@@ -514,12 +512,10 @@ class PromptDecoderOnlyTest(absltest.TestCase):
         decode=False,
         prefill=False,
         decoder_causal_attention=decoder_causal)
-    self.assertEqual(
-        decoder_mask_mock.call_args_list[0],
-        mock.call(
-            decoder_target_tokens=target_tokens,
-            decoder_causal_attention=decoder_causal,
-            dtype=jnp.float32))
+    decoder_mask_mock.assert_called_once_with(
+        decoder_target_tokens=test_utils.ArrayEqualMatcher(target_tokens),
+        decoder_causal_attention=test_utils.ArrayEqualMatcher(decoder_causal),
+        dtype=jnp.float32)
 
   def test_decoder_only_shape(self):
     num_layers = 3
