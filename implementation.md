@@ -306,14 +306,18 @@ class and get an object back with `instance=True`. If you try to call
 not handled correctly. In these cases you need to check if called are equal
 using `self.assertEqual` and `mock.call`
 
-`.assert_called_once_with` does not correctly handle array parameters that are
-not the same object. The equality check it does first does an `is` check before
-calling the (possibly much more expensive) `__eq__` check. This means if the
-array you mock was called with is the **same** object as the one you are
-checking in the assert you can use this method. However if your arrays are
-different object you need to explicitly call
-`np.testing.assert_(allclose|array_equal)` using the values from
-`mock.call_args_list`.
+We provide test utilities, (`ArrayEqualMatcher` and `ArrayAllCloseMatcher`) to
+help make assertions about function calls that take jax/numpy arrays are
+arguments. `.assert_called_once_with` does not correctly handle array parameters
+that are not the same object. The equality check it does first does an `is`
+check before calling the (possibly much more expensive) `__eq__` check. This
+means if the array you mock was called with is the **same** object as the one
+you are checking in the assert, the test would pass, but if they are
+**different** objects with the same value, it would fail. The `ArrayMatcher`
+classes define `__eq__` methods that uses `np.(array_equal|allclose)` to
+compare arrays. By wrapping the arrays in the expected call (the arguments to
+`.assert_called_once_with`) in this call we can use normal asserts with arrays
+as arguments.
 
 ### Longer Running, More Integration-Style Tests
 

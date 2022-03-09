@@ -17,8 +17,7 @@
 from unittest import mock
 from absl.testing import absltest
 import jax.numpy as jnp
-import numpy as np
-from prompt_tuning.extended import multitask_prompts
+from prompt_tuning import test_utils
 from prompt_tuning.extended.train import multitask_prompts as train_multitask_prompts
 from prompt_tuning.train import prompts as train_prompts
 
@@ -30,8 +29,7 @@ class PromptsTest(absltest.TestCase):
     prompt_length = 5
     batch_size = 2
     seq_len = 20
-    mock_prompt = mock.create_autospec(
-        multitask_prompts.MultiTaskPrompt, spec_set=True, instance=True)
+    mock_prompt = mock.MagicMock()
     prompt = jnp.zeros((batch_size, prompt_length, embed_size))
     mock_prompt.return_value = prompt
     mock_combine = mock.create_autospec(
@@ -41,11 +39,15 @@ class PromptsTest(absltest.TestCase):
     input_tokens = jnp.ones((batch_size, seq_len))
     embed = jnp.ones((batch_size, seq_len, embed_size))
     prompt_module.apply({"params": {}}, input_tokens, embed)
-    self.assertEqual(mock_prompt.call_args_list[0],
-                     mock.call(input_tokens, embed))
-    np.testing.assert_allclose(mock_combine.call_args_list[0][0][0], prompt)
-    np.testing.assert_allclose(mock_combine.call_args_list[0][0][1], embed[:,
-                                                                           1:])
+
+    mock_prompt.assert_called_once_with(
+        test_utils.ArrayEqualMatcher(input_tokens),
+        test_utils.ArrayAllCloseMatcher(embed))
+
+    mock_combine.assert_called_once_with(
+        test_utils.ArrayAllCloseMatcher(prompt),
+        test_utils.ArrayAllCloseMatcher(embed[:, 1:]),
+        test_utils.ArrayEqualMatcher(input_tokens))
 
 
 if __name__ == "__main__":
