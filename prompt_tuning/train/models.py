@@ -47,6 +47,7 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
       self,
       params: Mapping[str, Array],
       batch: Mapping[str, jnp.ndarray],
+      rng: Optional[jax.random.KeyArray] = None,
       num_decodes: int = 1,
       decoder_params: Optional[MutableMapping[str, Any]] = None,
   ) -> Tuple[jnp.ndarray, Mapping[str, jnp.ndarray]]:
@@ -141,6 +142,13 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
     # below.
     if decoder_params is None:
       decoder_params = {}
+    if rng is not None:
+      if decoder_params.get('decode_rng') is not None:
+        raise ValueError(
+            f'Got RNG both from the `rng` argument ({rng}) and '
+            f"`decoder_params['decode_rng']` ({decoder_params['decode_rng']}). "
+            'Please specify one or the other.')
+      decoder_params['decode_rng'] = rng
 
     # When we run the actual decode function we will be indexing into the input
     # array to extract the next token (or write it when generating). It make
