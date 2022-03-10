@@ -55,8 +55,8 @@ $ gcloud alpha compute tpus tpu-vm delete ${TPU_NAME} --zone ${ZONE}
     Prompt Tuning repository.
 
 ```sh
-git clone --branch=main https://github.com/google-reserach/prompt-tuning
-cd prompt_tuning
+git clone --branch=main https://github.com/google-research/prompt-tuning
+cd prompt-tuning
 ```
 
 3.  Install the Prompt Tuning library.
@@ -148,7 +148,7 @@ $ gcloud alpha compute tpus tpu-vm create ${TPU_NAME} \
 $ gcloud alpha compute tpus tpu-vm ssh ${TPU_NAME} \
   --zone ${ZONE} \
   --worker=all \
-  --command="git clone --branch=main https://github.com/google-reserach/prompt-tuning && cd prompt-tuning && "
+  --command="git clone --branch=main https://github.com/google-research/prompt-tuning && cd prompt-tuning && "
 python3 -m pip install . -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 ```
 
