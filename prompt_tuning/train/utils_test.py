@@ -181,7 +181,12 @@ class UtilsTest(absltest.TestCase):
           fake_time = time
           def _time_dispatch():
             nonlocal fake_time
-            if inspect.stack()[3].function == 'save_numpy':
+            # Find the first non-private (therefore non-mock internal) caller
+            # of the mock.
+            callers = [s.function for s in inspect.stack()
+                       if not s.function.startswith('_')]
+            # Only increment the returned time value for the our time calls.
+            if callers[0] == 'save_numpy':
               ret = fake_time
               fake_time = backup_time
               return ret
