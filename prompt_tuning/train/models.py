@@ -110,6 +110,11 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
     # length.
     prefill_lengths = inputs_lengths + self.prompt_length
 
+    # If `self._inputs_bidirectional_attention = False`, we should not pass
+    # batch['decoder_causal_attention'] to `module.apply` during cache prefill
+    # and pass None instead.
+    maybe_decoder_causal_attention = self._get_decoder_causal_attention(batch)
+
     # This prefills the cache. Because prefill=True, the
     # layers.PromptDecoderOnly will add the prompt to the input.
     _, variables_with_cache = self.module.apply(
@@ -124,7 +129,7 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
         # This also restricts the mask to not include any target positions like
         # it would if you used `decoder_target_tokens`.
         batch['decoder_causal_attention'],
-        decoder_causal_attention=None,
+        decoder_causal_attention=maybe_decoder_causal_attention,
         mutable=['cache'],
         enable_dropout=False,
         prefill=True,
