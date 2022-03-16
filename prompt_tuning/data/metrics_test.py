@@ -15,6 +15,8 @@
 """Tests for metrics."""
 
 import ast
+import itertools
+import json
 import unittest.mock as mock
 from absl.testing import absltest
 from prompt_tuning.data import metrics
@@ -68,6 +70,46 @@ class MetricsTest(absltest.TestCase):
 
     result = metrics.safe_sample(k, pop, None)
     self.assertLen(result, k)
+
+  def test_metric_label_set_stats_distributions(self):
+    gold_counts = {"1": 1, "2": 2, "3": 1, "4": 10, "5": 3}
+    pred_counts = {"1": 2, "2": 2, "3": 3, "4": 5, "5": 5}
+    self.assertEqual(sum(gold_counts.values()), sum(pred_counts.values()))
+    gold_labels = list(itertools.chain(*([k] * v
+                                         for k, v in gold_counts.items())))
+    pred_labels = list(itertools.chain(*([k] * v
+                                         for k, v in pred_counts.items())))
+    predicted_labels = [{"prediction_pretokenized": p,
+                         "targets_pretokenized": t}
+                        for p, t in zip(pred_labels, gold_labels)]
+    result = metrics.label_set_stats(
+        None, predicted_labels, "m", normalize=False
+    )["m label distributions"].textdata
+    result = result.strip("`\n")
+    result = json.loads(result)
+    self.assertEqual(result["target label distribution"], gold_counts)
+    self.assertEqual(result["prediction label distribution"], pred_counts)
+
+  def test_metric_label_set_stats_distributions_normalized(self):
+    gold_dist = {"1": 0.1, "2": 0.2, "3": 0.1, "4": 0.4, "5": 0.2}
+    pred_dist = {"1": 0.2, "2": 0.2, "3": 0.05, "4": 0.25, "5": 0.3}
+    total_length = 20
+    self.assertEqual(sum(gold_dist.values()), 1.0)
+    self.assertEqual(sum(gold_dist.values()), sum(pred_dist.values()))
+    gold_labels = list(itertools.chain(*([k] * int(v * total_length)
+                                         for k, v in gold_dist.items())))
+    pred_labels = list(itertools.chain(*([k] * int(v * total_length)
+                                         for k, v in pred_dist.items())))
+    predicted_labels = [{"prediction_pretokenized": p,
+                         "targets_pretokenized": t}
+                        for p, t in zip(pred_labels, gold_labels)]
+    result = metrics.label_set_stats(
+        None, predicted_labels, "m", normalize=True
+    )["m label distributions"].textdata
+    result = result.strip("`\n")
+    result = json.loads(result)
+    self.assertEqual(result["target label distribution"], gold_dist)
+    self.assertEqual(result["prediction label distribution"], pred_dist)
 
   def test_metric_label_set_stats(self):
     predicted_labels = [{"prediction_pretokenized": p,

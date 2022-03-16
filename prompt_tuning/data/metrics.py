@@ -23,7 +23,9 @@ hands it off to a real metric function. There are also metric functions that
 produce a Text object that will be written to tensorboard.
 """
 
+import collections
 import itertools
+import json
 import random
 import textwrap
 from typing import Sequence, Optional, Dict, List, Mapping, Any
@@ -87,20 +89,30 @@ def label_set_stats(
     target_field: str = constants.TARGET_TEXT,
     prediction_field: str = constants.PREDICTION_TEXT,
     display_sets: bool = False,
+    normalize: bool = True
 ) -> Dict[str, seqio.metrics.Text]:
-  """Measure the number of invalid predictions.
+  """Create Summary Stats about the labels used.
 
-  The "target label set" should not change through evaluation, it is just the
-  set of gold labels in your validation split.
+  Measuring invalid predictions with the "${task} label stats metric":
+    The "target label set" should not change through evaluation, it is just the
+    set of gold labels in your validation split.
 
-  The "prediction label set" will change as your model predicts different values
-  between epochs.
+    The "prediction label set" will change as your model predicts different
+    values between epochs.
 
-  "target ∩ prediction" != "len(target)" means your model is systematically
-  missing some label. "target - prediction" != 0 means the same thing.
+    "target ∩ prediction" != "len(target)" means your model is systematically
+    missing some label. "target - prediction" != 0 means the same thing.
 
-  "prediction - target" != 0 means that your model is hallucinating a label that
-  is not included in the target label set.
+    "prediction - target" != 0 means that your model is hallucinating a label
+    that is not included in the target label set.
+
+  Measuring Label Distribution with the "${task} label distribution metric":
+    If a model is only guessing a single label, it is most likely just guessing
+    the most common class. Or it could have learned to restrict the vocabulary,
+    but not to solve the task.
+
+    If the distributions for the labels don't match between target and gold it
+    can suggest a mismatch in distribution between the train and test splits.
 
   Args:
     targets: The postprocessed targets, unused.
@@ -110,15 +122,21 @@ def label_set_stats(
     prediction_field: The dict key to access the pre-tokenized prediction.
     display_sets: Whether to display the actual values of the set of
       target/prediction labels.
+    normalize: If True, show label distributions as propotions that sum to one.
+      If False, show label distributions as raw counts.
 
   Returns:
     A Text metric with summary information about the sets of gold and predicted
     labels.
   """
   del targets
-  target_labels = {six.ensure_text(p[target_field]) for p in predictions}
-  prediction_labels = {six.ensure_text(p[prediction_field])
-                       for p in predictions}
+  target_label_counts = collections.Counter(
+      six.ensure_text(p[target_field]) for p in predictions)
+  prediction_label_counts = collections.Counter(
+      six.ensure_text(p[prediction_field]) for p in predictions)
+  target_labels = set(target_label_counts.keys())
+  prediction_labels = set(prediction_label_counts.keys())
+
   outputs = [
       f"target label set cardinality: {len(target_labels)}",
       f"prediction label set cardinality: {len(prediction_labels)}",
@@ -139,11 +157,24 @@ def label_set_stats(
     ]
     # Interleave the cardinality and set values in the output list.
     outputs = list(itertools.chain(*zip(outputs, sets)))
-  return {
+  metrics = {
       f"{task_name} label stats": seqio.metrics.Text(
           textdata="\n\n".join(outputs)
       )
   }
+  if normalize:
+    norm = sum(target_label_counts.values())
+    target_label_counts = {k: v / norm for k, v in target_label_counts.items()}
+    prediction_label_counts = {k: v / norm
+                               for k, v in prediction_label_counts.items()}
+  distributions = {
+      "target label distribution": target_label_counts,
+      "prediction label distribution": prediction_label_counts}
+  distributions_text = json.dumps(distributions, indent=2)
+  distributions_text = f"```\n{distributions_text}\n```"
+  metrics[f"{task_name} label distributions"] = seqio.metrics.Text(
+      textdata=distributions_text)
+  return metrics
 
 
 def safe_sample(num_examples: int,
