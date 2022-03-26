@@ -15,4 +15,5 @@
 """Import tasks."""
 
 # pylint: disable=unused-import,g-import-not-at-top
+from prompt_tuning.spot.data import summarization
 from t5.data import tasks as t5_tasks
