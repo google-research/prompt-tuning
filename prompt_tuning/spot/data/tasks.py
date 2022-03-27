@@ -17,5 +17,6 @@
 # pylint: disable=unused-import,g-import-not-at-top
 from prompt_tuning.spot.data import glue
 from prompt_tuning.spot.data import mrqa
+from prompt_tuning.spot.data import nli
 from prompt_tuning.spot.data import summarization
 from t5.data import tasks as t5_tasks
