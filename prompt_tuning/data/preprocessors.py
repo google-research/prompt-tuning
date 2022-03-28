@@ -91,7 +91,7 @@ def preprocess_tsv_to_qa(line,
 
 
 @seqio.map_over_dataset
-def mrqa(example):
+def mrqa(example, task_name=None):
   """Prepare the MRQA datasets to match SQUAD formatting."""
   new_ex = {}
   new_ex['idx'] = example['qid']
@@ -99,8 +99,12 @@ def mrqa(example):
   new_ex['context'] = _pad_punctuation(example['context'])
   new_ex['answer'] = _pad_punctuation(example['answers'][0])
   new_ex['answers'] = _pad_punctuation(example['answers'])
-  new_ex['inputs'] = _string_join(
-      ['question:', new_ex['question'], 'context:', new_ex['context']])
+  strs_to_join = [
+      'question:', new_ex['question'], 'context:', new_ex['context']
+  ]
+  if task_name is not None:
+    strs_to_join = [task_name] + strs_to_join
+  new_ex['inputs'] = _string_join(strs_to_join)
   new_ex['targets'] = new_ex['answer']
   return new_ex
 
@@ -114,6 +118,7 @@ def preprocess_text_generation(
     prefix=None,
     source_nested_key=None,
     target_nested_key=None,
+    source_segment=None,
 ):
   """Convert a text generation dataset to a text-to-text format.
 
@@ -128,6 +133,7 @@ def preprocess_text_generation(
     prefix: A text that specifies how the model should perform the task.
     source_nested_key: The nested key for the source text (if any).
     target_nested_key: The nested key for the target text (if any).
+    source_segment: A text used to separate source text segments if they exist.
 
   Returns:
     A preprocessed example with the format listed above.
@@ -138,10 +144,19 @@ def preprocess_text_generation(
   target_text = example[target_key] if target_nested_key is None else example[
       target_key][target_nested_key]
 
-  strs_to_join = [s for s in [task_name, prefix, source_text] if s is not None]
+  strs_to_join = [task_name, prefix]
+  if source_text.shape.as_list() and source_segment is not None:
+    if task_name is not None or prefix is not None:
+      strs_to_join.append(' ')
+    inputs = _string_join([s for s in strs_to_join if s is not None
+                          ]) + tf.strings.reduce_join([source_text],
+                                                      separator=source_segment)
+  else:
+    strs_to_join.append(source_text)
+    inputs = _string_join([s for s in strs_to_join if s is not None])
 
   return {
-      'inputs': tf.strings.join(strs_to_join, separator=' '),
+      'inputs': inputs,
       'targets': target_text
   }
 
