@@ -91,7 +91,7 @@ def preprocess_tsv_to_qa(line,
 
 
 @seqio.map_over_dataset
-def mrqa(example):
+def mrqa(example, task_name=None):
   """Prepare the MRQA datasets to match SQUAD formatting."""
   new_ex = {}
   new_ex['idx'] = example['qid']
@@ -99,8 +99,12 @@ def mrqa(example):
   new_ex['context'] = _pad_punctuation(example['context'])
   new_ex['answer'] = _pad_punctuation(example['answers'][0])
   new_ex['answers'] = _pad_punctuation(example['answers'])
-  new_ex['inputs'] = _string_join(
-      ['question:', new_ex['question'], 'context:', new_ex['context']])
+  strs_to_join = [
+      'question:', new_ex['question'], 'context:', new_ex['context']
+  ]
+  if task_name is not None:
+    strs_to_join = [task_name] + strs_to_join
+  new_ex['inputs'] = _string_join(strs_to_join)
   new_ex['targets'] = new_ex['answer']
   return new_ex
 
