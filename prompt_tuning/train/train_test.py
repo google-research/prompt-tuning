@@ -60,8 +60,8 @@ from t5x import utils
 train = train_lib.train
 
 FLAGS = flags.FLAGS
-TEST_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         "test_data")
+TEST_DATA = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "test_data")
 
 
 class PromptsTrainTest(parameterized.TestCase):
@@ -132,9 +132,9 @@ class PromptsTrainTest(parameterized.TestCase):
       grad_fn = jax.value_and_grad(model.loss_fn, has_aux=True)
 
       # Run the forward and backward pass of the model.
-      (loss, (weight_sum, metrics)), grad = grad_fn(train_state.params, batch,
-                                                    jax.random.PRNGKey(0))
-      del loss, weight_sum, metrics
+      (loss, aux), grad = grad_fn(train_state.params, batch,
+                                  jax.random.PRNGKey(0))
+      del loss, aux
 
       # Apply the gradients to get an optimizer with updated variables.
       return train_state.apply_gradient(grad, learning_rate=0.3)
@@ -185,8 +185,7 @@ class PromptsTrainTest(parameterized.TestCase):
   ])
   def test_prompt_loading(self, config, checkpoint):
     gin.clear_config(clear_constants=True)
-    configured_partitioner = gin.configurable(
-        partitioning.PjitPartitioner)
+    configured_partitioner = gin.configurable(partitioning.PjitPartitioner)
     configured_checkpoint_cfg = gin.configurable(utils.CheckpointConfig)
     checkpoint = os.path.join(FLAGS.test_srcdir, TEST_DATA, checkpoint)
     gin.parse_config_files_and_bindings(
