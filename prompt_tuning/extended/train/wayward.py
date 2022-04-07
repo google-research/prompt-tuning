@@ -113,7 +113,7 @@ class WaywardPromptEncoderDecoderModel(models.EncoderDecoderModel):
       batch: Mapping[str, jnp.ndarray],
       dropout_rng: Optional[jnp.ndarray],
   ):
-    loss, (weight_sum, metrics) = super().loss_fn(
+    loss, metrics = super().loss_fn(
         params=params, batch=batch, dropout_rng=dropout_rng)
 
     flat_params = {
@@ -122,4 +122,4 @@ class WaywardPromptEncoderDecoderModel(models.EncoderDecoderModel):
     }
     continuous_prompt = flat_params[self.prompt_path]
     wayward_loss = self.distance(continuous_prompt, self.discrete_prompt)
-    return loss + self.gamma * wayward_loss, (weight_sum, metrics)
+    return loss + self.gamma * wayward_loss, metrics
