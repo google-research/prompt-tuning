@@ -75,7 +75,7 @@ def format_qa(indices: Sequence[int],
     example_text = textwrap.dedent(f"""
       context: {six.ensure_text(examples[idx][context_field])}\n
       question: {six.ensure_text(examples[idx][question_field])}\n
-      answers: {"; ".join([six.ensure_text(a) for a in examples[idx][answers_field]])}\n
+      answers: {"; ".join(set([six.ensure_text(a) for a in examples[idx][answers_field]]))}\n
       prediction: {six.ensure_text(examples[idx][prediction_field])}\n
       """.lstrip("\n"))
     texts.append(example_text)
