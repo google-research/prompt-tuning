@@ -52,10 +52,11 @@ def format_classification(indices: Sequence[int],
   """Format text output for classification tasks."""
   texts = []
   for idx in indices:
+    ex = examples[idx]
     example_text = textwrap.dedent(f"""
-         example: {six.ensure_text(examples[idx][input_field])}\n
-         target: {six.ensure_text(examples[idx][target_field])}\n
-         prediction: {six.ensure_text(examples[idx][prediction_field])}\n
+         example: {six.ensure_text(ex[input_field])}\n
+         target: {six.ensure_text(ex[target_field])}\n
+         prediction: {six.ensure_text(ex[prediction_field])}\n
          """.lstrip("\n"))
     texts.append(example_text)
   return "\n\n".join(texts)
@@ -72,11 +73,13 @@ def format_qa(indices: Sequence[int],
   """Format text output for qa tasks."""
   texts = []
   for idx in indices:
+    ex = examples[idx]
+    answers = sorted(set(six.ensure_text(a) for a in ex[answers_field]))
     example_text = textwrap.dedent(f"""
-      context: {six.ensure_text(examples[idx][context_field])}\n
-      question: {six.ensure_text(examples[idx][question_field])}\n
-      answers: {"; ".join([six.ensure_text(a) for a in examples[idx][answers_field]])}\n
-      prediction: {six.ensure_text(examples[idx][prediction_field])}\n
+      context: {six.ensure_text(ex[context_field])}\n
+      question: {six.ensure_text(ex[question_field])}\n
+      answers: {"; ".join(answers)}\n
+      prediction: {six.ensure_text(ex[prediction_field])}\n
       """.lstrip("\n"))
     texts.append(example_text)
   return "\n\n".join(texts)
