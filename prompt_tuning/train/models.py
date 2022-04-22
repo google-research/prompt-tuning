@@ -48,6 +48,8 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
       params: Mapping[str, Array],
       batch: Mapping[str, jnp.ndarray],
       rng: Optional[jax.random.KeyArray] = None,
+      *,
+      return_all_decodes: bool = False,
       num_decodes: int = 1,
       decoder_params: Optional[MutableMapping[str, Any]] = None,
   ) -> Tuple[jnp.ndarray, Mapping[str, jnp.ndarray]]:
@@ -188,15 +190,23 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
         initial_index=prefill_lengths,
         **decoder_params)
 
-    # Remove the (possibly fake) beam dimension.
-    decoded_sequences = decoded_sequences[:, -1, :]
+    if not return_all_decodes:
+      # Search returns [n_batch, n_beam/decodes, n_length] with the beam/decode
+      # dimension sorted in increasing order of log-probability.
+      # `scores` is [batch, beam/decode_size]
+      # We take the highest scoring sequence (-1) and its score
+      decoded_sequences = decoded_sequences[:, -1, :]
+      # Beam search returns []
+      aux = {'scores': scores[:, -1]}
+    else:
+      # We return all samples and scores, rather than just the top ones.
+      aux = {'scores': scores}
 
-    # Beam search returns []
-    aux = {'scores': scores[:, -1]}
-
-    # Return the decoded sequences with an empty aux output dict.
+    # Remove the prompt + input tokens from each sequence and shuffle them
+    # to the back of the sequence.
     sequences = models.remove_prefix(decoded_sequences, prefill_lengths)
     # Remove the extra space the prompt took up (these are all shifted to the
-    # end and zero'd out).
-    trimmed_sequences = sequences[:, :-self.prompt_length]
+    # end and zero'd out). Use ... so we don't need to know if there this was
+    # all decodes or just one.
+    trimmed_sequences = sequences[..., :-self.prompt_length]
     return trimmed_sequences, aux
