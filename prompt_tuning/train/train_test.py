@@ -132,9 +132,9 @@ class PromptsTrainTest(parameterized.TestCase):
       grad_fn = jax.value_and_grad(model.loss_fn, has_aux=True)
 
       # Run the forward and backward pass of the model.
-      (loss, aux), grad = grad_fn(train_state.params, batch,
-                                  jax.random.PRNGKey(0))
-      del loss, aux
+      (loss, metrics), grad = grad_fn(train_state.params, batch,
+                                      jax.random.PRNGKey(0))
+      del loss, metrics
 
       # Apply the gradients to get an optimizer with updated variables.
       return train_state.apply_gradient(grad, learning_rate=0.3)
