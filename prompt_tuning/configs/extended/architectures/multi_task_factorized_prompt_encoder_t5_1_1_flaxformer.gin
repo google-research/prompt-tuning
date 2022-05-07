@@ -1,0 +1,28 @@
+# Flaxformer implementation of T5.1.1 architecture.
+#
+# Required to be overridden:
+#
+# - PROMPT
+# - PROMPT_LENGTH
+
+# We disable input order checks because the gin linter seems to want inputs in
+# alphabetical order without considering std, third_party, and project packages
+# like the python ordering of imports do. So disable that for now.
+
+# ginlint: disable=bad-import-order
+from __gin__ import dynamic_registration
+
+from prompt_tuning import masks
+from prompt_tuning.extended import masks as prompt_masks
+from prompt_tuning.train import layers as prompt_layers
+
+include 'prompt_tuning/configs/architectures/prompt_encoder_t5_1_1_flaxformer.gin'
+
+
+prompt_layers.PromptEncoderDecoder:
+  encoder_mask_factory = @prompt_masks.prompt_encoder_attention_mask
+
+prompt_masks.prompt_encoder_attention_mask:
+  prompt_length = %PROMPT_LENGTH
+  multitask = True
+masks.add_fake_prompt.multitask = True
