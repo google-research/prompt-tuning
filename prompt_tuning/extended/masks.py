@@ -57,7 +57,8 @@ def summarize_attention(attentions: Set[str], decoder: bool = False) -> str:
 def prompt_encoder_attention_mask(
     prompt_length: int,
     allowable_attention: Optional[Set[str]] = None,
-    multitask: bool = False) -> Callable[[Array, DType], Array]:
+    multitask: bool = False,
+    multitask_factorized: bool = False) -> Callable[[Array, DType], Array]:
   """Create the prompt-aware encoder attention mask.
 
   Args:
@@ -66,6 +67,9 @@ def prompt_encoder_attention_mask(
       if missing, input->input (normal) and input->prompt attention are added.
     multitask: True if the first token of the input is the task_index which
       should not be considered as it will be removed.
+    multitask_factorized: True if the first two tokens of the input are the
+      lang_index and task_index which should not be considered as they will be
+      removed.
 
   Returns:
     A callable that takes the input and returns the appropriate mask.
@@ -111,6 +115,8 @@ def prompt_encoder_attention_mask(
     """
     if multitask:
       encoder_input_tokens = encoder_input_tokens[:, 1:]
+    elif multitask_factorized:
+      encoder_input_tokens = encoder_input_tokens[:, 2:]
 
     full_length = prompt_length + encoder_input_tokens.shape[1]
 
@@ -178,7 +184,9 @@ def prompt_encoder_attention_mask(
 def prompt_decoder_attention_mask(
     prompt_length: int,
     allowable_attention: Optional[Set[str]] = None,
-    multitask: bool = False) -> Callable[[Array, Array, DType], Array]:
+    multitask: bool = False,
+    multitask_factorized: bool = False
+) -> Callable[[Array, Array, DType], Array]:
   """Create the prompt-aware decoder attention mask.
 
   Note:
@@ -193,6 +201,9 @@ def prompt_decoder_attention_mask(
       if missing, input->input (normal) and input->prompt attention are added.
     multitask: True if the first token of the input is the task_index which
       should not be considered as it will be removed.
+    multitask_factorized: True if the first two tokens of the input are the
+      lang_index and task_index which should not be considered as they will be
+      removed.
 
   Returns:
     A callable that takes the input and returns the appropriate mask.
@@ -224,6 +235,10 @@ def prompt_decoder_attention_mask(
       decoder_target_tokens = decoder_target_tokens[:, 1:]
       if decoder_causal_attention is not None:
         decoder_causal_attention = decoder_causal_attention[:, 1:]
+    elif multitask_factorized:
+      decoder_target_tokens = decoder_target_tokens[:, 2:]
+      if decoder_causal_attention is not None:
+        decoder_causal_attention = decoder_causal_attention[:, 2:]
     masks = []
     pretend = jnp.ones((decoder_target_tokens.shape[0], prompt_length),
                        dtype=decoder_target_tokens.dtype)

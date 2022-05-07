@@ -21,8 +21,10 @@ from flaxformer.types import Array
 from flaxformer.types import DType
 
 
-def add_fake_prompt(prompt_length: int,
-                    multitask: bool = False) -> Callable[[Array], Array]:
+def add_fake_prompt(
+    prompt_length: int,
+    multitask: bool = False,
+    multitask_factorized: bool = False) -> Callable[[Array], Array]:
   """Prepend fake (active) input to update masks for prompt tuning.
 
   Note:
@@ -35,6 +37,8 @@ def add_fake_prompt(prompt_length: int,
     prompt_length: The length of the prompt.
     multitask: True if the first token of the input is task indices (which are
       ignored in the calculation).
+    multitask_factorized: True if the first two tokens of the input are language
+      and task indices (which are ignored in the calculation).
 
   Returns:
     A callable that takes the input tokens and returns the input tokens with
@@ -58,6 +62,10 @@ def add_fake_prompt(prompt_length: int,
       # If we are multitask, make sure the encoder mask doesn't include the
       # the task index which will be sliced off.
       encoder_input_tokens = encoder_input_tokens[:, 1:]
+    elif multitask_factorized:
+      # If we are multitask, make sure the encoder mask doesn't include the
+      # the language and task indices which will be sliced off.
+      encoder_input_tokens = encoder_input_tokens[:, 2:]
     return jnp.concatenate([pad, encoder_input_tokens], axis=1)
 
   return _add_fake_prompt
