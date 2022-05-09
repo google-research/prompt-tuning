@@ -35,6 +35,9 @@ with open("README.md") as fp:
   LONG_DESCRIPTION = fp.read()
 
 _jax_version = "0.3.1"
+# TODO Remove this when tensorflow_text (a transitive dep) is in
+# in line with tf. Or when we can turn on the better pip version resolver.
+_tf_text_version_req = "<2.9,>=2.8.0"
 
 setuptools.setup(
     name="prompt-tuning",
@@ -60,7 +63,7 @@ setuptools.setup(
         "numpy",
         "seqio-nightly",
         "t5",
-        "tensorflow",
+        f"tensorflow{_tf_text_version_req}",
         "tensorflow_datasets",
         # Install from git as they have setup.pys but are not on PyPI.
         "t5x @ git+https://github.com/google-research/t5x@main#egg=t5x",
