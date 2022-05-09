@@ -1,0 +1,80 @@
+# Flaxformer implementation of T5.1.1 architecture with prompting.
+#
+# Required to be overridden:
+#
+# - PROMPT
+# - PROMPT_LENGTH
+# - PER_LAYER_PROMPT: For this on, the combining function should be set to
+#                     either `replace_prompt` or `add_prompt`
+
+# We disable input order checks because the gin linter seems to want inputs in
+# alphabetical order without considering std, third_party, and project packages
+# like the python ordering of imports do. So disable that for now.
+
+# ginlint: disable=bad-import-order
+from __gin__ import dynamic_registration
+
+from flax import linen
+from flaxformer.components.attention import dense_attention
+from flaxformer.components import dense
+from flaxformer.components import embedding
+from flaxformer.components import layer_norm
+from flaxformer.components import relative_position_biases
+from flaxformer.architectures.t5 import t5_architecture
+
+from prompt_tuning import masks as prompt_masks
+from prompt_tuning.extended.train import per_layer
+from prompt_tuning.train import layers as prompt_layers
+
+PROMPT = %gin.REQUIRED
+PROMPT_LENGTH = %gin.REQUIRED
+PER_LAYER_PROMPT = %gin.REQUIRED
+
+include 'prompt_tuning/configs/architectures/t5_1_1_flaxformer.gin'
+
+# Architecture (Flax Module)
+# Use our subclass that has a prompted encoder and normal decoder
+ARCHITECTURE = @prompt_layers.PromptEncoderDecoder()
+prompt_layers.PromptEncoderDecoder:
+  # Set the encoder to be my encoder subclass that adds a prompt
+  encoder_factory = @prompt_layers.PromptEncoder
+  decoder_factory = @t5_architecture.Decoder
+  shared_token_embedder_factory = @embedding.Embed
+  dtype = %ACTIVATION_DTYPE
+  # Setting so our mask turns our correct.
+  encoder_mask_factory = @prompt_masks.create_prompt_encoder_mask
+  add_fake_prompt_factory = @prompt_masks.add_fake_prompt
+
+# How to create an attention mask for the encoder the considers the prompt
+prompt_masks.create_prompt_encoder_mask:
+  prompt_length = %PROMPT_LENGTH
+
+# Decoder masking needs to know how long the prompt is because it creates
+# full visible attention over the prompts and inputs.
+prompt_masks.add_fake_prompt:
+  prompt_length = %PROMPT_LENGTH
+  multitask = False
+
+# Encoder
+prompt_layers.PromptEncoder:
+  # How to create the prompt module.
+  prompt_factory = %PROMPT
+  add_fake_prompt_factory = @prompt_masks.add_fake_prompt
+  num_layers = %NUM_ENCODER_LAYERS
+  # Add a Prompt at each layer.
+  layer_factory = @per_layer.PromptEncoderLayer
+  input_dropout_factory = %DROPOUT_FACTORY
+  output_dropout_factory = %DROPOUT_FACTORY
+  layer_norm_factory = @layer_norm.T5LayerNorm
+  position_embedder_factory = None
+  shared_relative_position_bias_factory = @relative_position_biases.RelativePositionBiases
+  dtype = %ACTIVATION_DTYPE
+
+# Add a Prompt to each layer
+per_layer.PromptEncoderLayer:
+  attention = @dense_attention.MultiHeadDotProductAttention()
+  mlp = @dense.MlpBlock()
+  dropout_factory = %DROPOUT_FACTORY
+  layer_norm_factory = @layer_norm.T5LayerNorm
+  activation_partitioning_dims = %ACTIVATION_PARTITIONING_DIMS
+  prompt_factory = %PER_LAYER_PROMPT
