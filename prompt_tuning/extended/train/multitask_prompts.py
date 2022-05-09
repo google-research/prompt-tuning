@@ -26,7 +26,7 @@ from flaxformer.types import Array
 
 
 class MultiTaskPrompt(nn.Module):
-  """Geneate a MultiTaskPrompt and concatenate it with the input.
+  """Generate a MultiTaskPrompt and concatenate it with the input.
 
   This is the training time version of prompting a model. Calling the injected
   `prompt` module will generate your prompt. This prompt should be batched. This

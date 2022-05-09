@@ -40,6 +40,7 @@ train_prompts.Prompt.prompt = @prompts.Prompt()
 prompts.Prompt:
   length = %PROMPT_LENGTH
   prompt_init = @prompt_init/linen.initializers.uniform()
+  dtype = %ACTIVATION_DTYPE
 prompt_init/linen.initializers.uniform.scale = 0.5
 
 # ========== These are Prompt Tuning HPs you might want to override ==========

@@ -51,6 +51,7 @@ from prompt_tuning.prompts import expand_to_batch
 from prompt_tuning.prompts import Initializer
 from flaxformer.components import embedding
 from flaxformer.types import Array
+from flaxformer.types import DType
 
 
 GetFeatures = Optional[Callable[[nn.Module, int], int]]
@@ -296,6 +297,11 @@ class MultiTaskPrompt(nn.Module):
       number of values in a single (flattened) task specific prompt.
     combine_shared_and_tasks: A function that combines the shared and
       (flattened) task specific prompts.
+    shared_prompt_axis_names: Logical names for the axes of the shared prompt
+      parameter.
+    individual_prompt_axis_names: Logical names for the axes of the per-task
+      prompt parameters.
+    dype: The dtype of the activations of this module.
   """
   length: int
   num_tasks: int
@@ -308,6 +314,7 @@ class MultiTaskPrompt(nn.Module):
   combine_shared_and_tasks: Combine = None
   shared_prompt_axis_names: Tuple[str, str] = ("prompt", "embed")
   individual_prompt_axis_names: Tuple[str, str] = ("tasks", "prompt+embed")
+  dtype: DType = jnp.float32
 
   def setup(self):
     if self.combine_shared_and_tasks is None:
@@ -334,6 +341,7 @@ class MultiTaskPrompt(nn.Module):
         self.shared_init,
         (self.length, shared_features),
         axes=self.shared_prompt_axis_names)
+    shared_prompt = shared_prompt.astype(self.dtype)
 
     # Get the task indices and convert them to offsets from zero.
     input_task_idx = x[:, 0]
