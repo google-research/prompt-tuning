@@ -22,7 +22,7 @@ from t5.data import preprocessors as t5_preprocessors
 
 
 
-# ===== BART (Lweis et. al., 2019) Pre-training-like objectives =====
+# ===== BART (Lewis et. al., 2019) Pre-training-like objectives =====
 seqio.TaskRegistry.add(
     "c4_v220_bart_text_infilling",
     source=seqio.TfdsDataSource(tfds_name="c4/en:2.2.0"),
