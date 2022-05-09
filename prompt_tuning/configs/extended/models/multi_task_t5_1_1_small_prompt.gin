@@ -1,11 +1,4 @@
-# T5.1.1 Small Prompt model.
+# Multitask Prompt T5.1.1 Small Prompt model.
 
-include 'prompt_tuning/configs/extended/models/multi_task_t5_1_1_base_prompt.gin'
-
-# Architecture overrides
-NUM_HEADS = 6
-NUM_ENCODER_LAYERS = 8
-NUM_DECODER_LAYERS = 8
-HEAD_DIM = 64
-EMBED_DIM = 512
-MLP_DIM = 1024
+include 'prompt_tuning/configs/extended/models/multi_task_t5_1_1_prompt.gin'
+include 'prompt_tuning/configs/models/sizes/small.gin'

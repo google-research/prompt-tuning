@@ -1,0 +1,76 @@
+# T5.1.1 Base Prompt model with a wayward prompt.
+#
+# This is a standard prompt tuning training run except we have an extra term in
+# our loss function that regularizes the learned prompt towards the embedded
+# representation of a discrete prompt from Khashabi, et al. (2021)
+# https://arxiv.org/abs/2112.08348
+#
+# Provides MODEL, PROMPT, and PROMPT_LENGTH.
+#
+# You can set TASK_STRING to update the task description we are trying to match.
+#
+# The default TASK_STRING has a prompt length of 90 and is setup for SST2.
+
+from __gin__ import dynamic_registration
+
+from flax import linen
+from prompt_tuning import prompts
+from prompt_tuning.extended.train import wayward
+from prompt_tuning.train import prompts as train_prompts
+
+include 'prompt_tuning/configs/models/t5_1_1_prompt.gin'
+
+
+# SST2 preprocessors in t5 result in spacing around punctuation which we
+# include here.
+TASK_STRING = ("Classify these movie reviews based on sentiment . Use 2 "
+               "classes . One positive ( for reviews that paint the movie in "
+               "a favorable light ) and one negative ( for reviews that make "
+               "you not want to see the movie ) . Use the string ` positive ` "
+               "for the positive class , the good movies , and use the string "
+               "` negative ` for the negative class , the bad movies .")
+
+TASK_PIECES = @wayward.encode_string()
+wayward.encode_string:
+  s = %TASK_STRING
+  vocab = %VOCABULARY
+
+PROMPT_LENGTH = @wayward.length()
+wayward.length.x = %TASK_PIECES
+
+PROMPT = @train_prompts.Prompt
+train_prompts.Prompt.prompt = @prompts.Prompt()
+
+prompts.Prompt:
+  length = %PROMPT_LENGTH
+  prompt_init = @prompt_init/prompts.from_embedded_string()
+
+prompt_init/prompts.from_embedded_string:
+  embeddings = @prompt_init/prompts.t5x_load()
+  vocab = %VOCABULARY
+  text = %TASK_STRING
+  initializer = @linen.initializers.zeros
+
+prompt_init/prompts.t5x_load:
+  checkpoint_path = %INITIAL_CHECKPOINT_PATH
+  variable_path = "token_embedder/embedding"
+
+
+MODEL = @wayward.WaywardPromptEncoderDecoderModel()
+wayward.WaywardPromptEncoderDecoderModel:
+  module = %ARCHITECTURE
+  input_vocabulary = %VOCABULARY
+  output_vocabulary = %VOCABULARY
+  optimizer_def = %OPTIMIZER
+  z_loss = %Z_LOSS
+  label_smoothing = %LABEL_SMOOTHING
+  loss_normalizing_factor = %LOSS_NORMALIZING_FACTOR
+  distance = @wayward.squared_l2_distance
+  discrete_prompt = @prompt_init/wayward.execute_initializer()
+  prompt_path = "encoder/prompt/prompt/prompt"
+  gamma = 0.01
+
+prompt_init/wayward.execute_initializer:
+  init = @prompt_init/prompts.from_embedded_string()
+  rng = None
+  shape = (%PROMPT_LENGTH, %EMBED_DIM)

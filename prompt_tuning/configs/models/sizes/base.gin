@@ -1,0 +1,8 @@
+# Settings to create a Base T5 1.1/MT5 model.
+
+NUM_HEADS = 12
+NUM_ENCODER_LAYERS = 12
+NUM_DECODER_LAYERS = 12
+HEAD_DIM = 64
+EMBED_DIM = 768
+MLP_DIM = 2048
