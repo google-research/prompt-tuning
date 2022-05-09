@@ -24,11 +24,33 @@ append, interleave, etc). This is the class that should actually be assigned to
 `PROMPT` in the gin configs.
 """
 
-from typing import Callable
+from typing import Protocol
 import flax.linen as nn
 import jax.numpy as jnp
 from prompt_tuning import prompts
 from flaxformer.types import Array
+
+
+class CombinationFn(Protocol):
+  """Combine a prompt and the embedded input."""
+
+  def __call__(self, prompt: Array, x_embed: Array, x: Array) -> Array:
+    """Combine the `prompt` and the embedded input (`x_embed`).
+
+    Note:
+      x (the integer values of the input) is not always required but we it as
+      a parameter for all combination functions so we can easily swap them out.
+
+    Args:
+      prompt: The prompt variable.
+      x_embed: The embedded input.
+      x: The integer tokens for the input, this is required for some
+        combinations such as adding the prompt after the input.
+
+    Returns:
+      The embedded input with the prompt added to it.
+    """
+    pass
 
 
 def prefix_prompt(prompt: Array, x_embed: Array, x: Array) -> Array:
@@ -153,7 +175,7 @@ class Prompt(nn.Module):
     combine: A function that combines the prompt and the embedded input.
   """
   prompt: nn.Module
-  combine: Callable[[Array, Array, Array], Array] = prefix_prompt
+  combine: CombinationFn = prefix_prompt
 
   def __call__(self, x, x_embed):
     prompt = self.prompt(x, x_embed)
