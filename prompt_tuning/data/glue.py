@@ -37,10 +37,14 @@ from prompt_tuning.data import postprocessors as pt_postprocessors
 from prompt_tuning.data import preprocessors as pt_preprocessors
 from prompt_tuning.data import utils
 import seqio
+from t5.data import postprocessors as t5_post
+from t5.data import preprocessors as t5_pre
 from t5.data.glue_utils import get_glue_metric
 from t5.data.glue_utils import get_glue_postprocess_fn
 from t5.data.glue_utils import get_glue_text_preprocessor
 from t5.data.glue_utils import get_glue_weight_mapping
+from t5.evaluation import metrics as t5_metrics
+import tensorflow as tf
 import tensorflow_datasets as tfds
 
 glue_indexer = utils.task_mapping(
@@ -177,3 +181,145 @@ for data_ver, task_ver in (("1.0.0", "v002"), ("2.0.0", "v200")):
               if "mnli" in x
           ],
           default_rate=1.0)
+
+
+def sst2_rank_classification_preprocessor(
+    dataset: tf.data.Dataset, mode: str = "eval") -> tf.data.Dataset:
+  """sst2 rank classification preprocessor."""
+
+  # Construct the inputs_fn.
+  def inputs_fn(x):
+    input_str = x["inputs"]
+    # For Bad and Good the inputs will be the same.
+    return [input_str, input_str]
+
+  # Construct the targets_fn.
+  def targets_fn(x):
+    del x
+    return ["negative", "positive"]
+
+  # Construct the is_correct_fn -- "Is the first doc good or bad?"
+  def is_correct_fn(x):
+    return tf.equal(["negative", "positive"], x["targets"])  # [0, 1] or [1, 0]
+
+  return t5_pre.rank_classification(
+      dataset,
+      inputs_fn=inputs_fn,
+      targets_fn=targets_fn,
+      is_correct_fn=is_correct_fn,
+      mode=mode)
+
+
+def qqp_rank_classification_preprocessor(dataset: tf.data.Dataset,
+                                         mode: str = "eval") -> tf.data.Dataset:
+  """qqp rank classification preprocessor."""
+
+  # Construct the inputs_fn.
+  def inputs_fn(x):
+    input_str = x["inputs"]
+    # For Bad and Good the inputs will be the same.
+    return [input_str, input_str]
+
+  # Construct the targets_fn.
+  def targets_fn(x):
+    del x
+    return ["not_duplicate", "duplicate"]
+
+  # Construct the is_correct_fn -- "Is the first doc good or bad?"
+  def is_correct_fn(x):
+    return tf.equal(["not_duplicate", "duplicate"],
+                    x["targets"])  # [0, 1] or [1, 0]
+
+  return t5_pre.rank_classification(
+      dataset,
+      inputs_fn=inputs_fn,
+      targets_fn=targets_fn,
+      is_correct_fn=is_correct_fn,
+      mode=mode)
+
+
+seqio.TaskRegistry.add(
+    "taskless_glue_sst2_v002_examples_rank_classification_validation",
+    source=seqio.TfdsDataSource(
+        tfds_name="glue/sst2:1.0.0",
+        splits=("validation",),
+    ),
+    preprocessors=[
+        get_glue_text_preprocessor(tfds.text.glue.Glue.builder_configs["sst2"]),
+        pt_preprocessors.remove_first_text_token,
+        functools.partial(sst2_rank_classification_preprocessor, mode="eval"),
+        seqio.preprocessors.tokenize,
+        seqio.CacheDatasetPlaceholder(),
+        seqio.preprocessors.append_eos_after_trim,
+    ],
+    postprocess_fn=t5_post.rank_classification,
+    output_features=features.T5_FEATURES,
+    metric_fns=[t5_metrics.rank_classification])
+
+seqio.TaskRegistry.add(
+    "taskless_glue_sst2_v002_examples_rank_classification_train",
+    source=seqio.TfdsDataSource(
+        tfds_name="glue/sst2:1.0.0",
+        splits=("train",),
+    ),
+    preprocessors=[
+        get_glue_text_preprocessor(tfds.text.glue.Glue.builder_configs["sst2"]),
+        pt_preprocessors.remove_first_text_token,
+        functools.partial(sst2_rank_classification_preprocessor, mode="train"),
+        seqio.preprocessors.tokenize,
+        seqio.CacheDatasetPlaceholder(),
+        seqio.preprocessors.append_eos_after_trim,
+    ],
+    postprocess_fn=t5_post.rank_classification,
+    output_features=features.T5_FEATURES,
+    metric_fns=[t5_metrics.rank_classification])
+
+seqio.MixtureRegistry.add(
+    "taskless_glue_sst2_v002_examples_rank_classification", [
+        "taskless_glue_sst2_v002_examples_rank_classification_validation",
+        "taskless_glue_sst2_v002_examples_rank_classification_train"
+    ],
+    default_rate=1)
+
+seqio.TaskRegistry.add(
+    "taskless_glue_qqp_v002_examples_rank_classification_validation",
+    source=seqio.TfdsDataSource(
+        tfds_name="glue/qqp:1.0.0",
+        splits=("validation",),
+    ),
+    preprocessors=[
+        get_glue_text_preprocessor(tfds.text.glue.Glue.builder_configs["qqp"]),
+        pt_preprocessors.remove_first_text_token,
+        functools.partial(qqp_rank_classification_preprocessor, mode="eval"),
+        seqio.preprocessors.tokenize,
+        seqio.CacheDatasetPlaceholder(),
+        seqio.preprocessors.append_eos_after_trim,
+    ],
+    postprocess_fn=t5_post.rank_classification,
+    output_features=features.T5_FEATURES,
+    metric_fns=[t5_metrics.rank_classification])
+
+seqio.TaskRegistry.add(
+    "taskless_glue_qqp_v002_examples_rank_classification_train",
+    source=seqio.TfdsDataSource(
+        tfds_name="glue/qqp:1.0.0",
+        splits=("train",),
+    ),
+    preprocessors=[
+        get_glue_text_preprocessor(tfds.text.glue.Glue.builder_configs["qqp"]),
+        pt_preprocessors.remove_first_text_token,
+        functools.partial(qqp_rank_classification_preprocessor, mode="train"),
+        seqio.preprocessors.tokenize,
+        seqio.CacheDatasetPlaceholder(),
+        seqio.preprocessors.append_eos_after_trim,
+    ],
+    postprocess_fn=t5_post.rank_classification,
+    output_features=features.T5_FEATURES,
+    metric_fns=[t5_metrics.rank_classification])
+
+seqio.MixtureRegistry.add(
+    "taskless_glue_qqp_v002_examples_rank_classification", [
+        "taskless_glue_qqp_v002_examples_rank_classification_validation",
+        "taskless_glue_qqp_v002_examples_rank_classification_train"
+    ],
+    default_rate=1)
