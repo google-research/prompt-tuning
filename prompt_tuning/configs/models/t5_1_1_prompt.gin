@@ -1,0 +1,127 @@
+# T5.1.1 Base Prompt model.
+# Provides MODEL, PROMPT, and PROMPT_LENGTH
+
+# We disable input order checks because the gin linter seems to want inputs in
+# alphabetical order without considering std, third_party, and project packages
+# like the python ordering of imports do. So disable that for now.
+
+# ginlint: disable=bad-import-order
+from __gin__ import dynamic_registration
+
+from flax import optim
+import seqio
+from t5x import models
+from t5x import utils
+from t5x import adafactor
+from flax import linen
+
+from prompt_tuning import prompts
+from prompt_tuning.train import prompts as train_prompts
+from prompt_tuning.train import utils as prompt_utils
+from prompt_tuning.train import optim as adafactor_optim
+
+ARCHITECTURE = %gin.REQUIRED
+
+include 'prompt_tuning/configs/architectures/prompt_encoder_t5_1_1_flaxformer.gin'
+
+# Architecture overrides
+NUM_HEADS = %gin.REQUIRED
+NUM_ENCODER_LAYERS = %gin.REQUIRED
+NUM_DECODER_LAYERS = %gin.REQUIRED
+HEAD_DIM = %gin.REQUIRED
+EMBED_DIM = %gin.REQUIRED
+MLP_DIM = %gin.REQUIRED
+
+PROMPT_LENGTH = 100
+
+# Configuration for the prompt
+PROMPT = @train_prompts.Prompt
+train_prompts.Prompt.prompt = @prompts.Prompt()
+prompts.Prompt:
+  length = %PROMPT_LENGTH
+  prompt_init = @prompt_init/linen.initializers.uniform()
+prompt_init/linen.initializers.uniform.scale = 0.5
+
+# ========== These are Prompt Tuning HPs you might want to override ==========
+# If you want to change the actual optimizer itself (to optim.Adam, etc), make
+# sure to update the optimizer that is passed to the MultiOptimizer.
+adafactor.Adafactor:
+  decay_rate = 0.8
+  step_offset = 0
+  multiply_by_parameter_scale = False
+  weight_decay_rate = 0.00001
+  logical_factor_rules = @adafactor_optim.standard_logical_factor_rules()
+
+# ========== Partial Loading ==========
+# The following is the configuration the allows to partial load a model (all the
+# checkpoints that value) without it complaining that the shapes don't match
+# (because we have an extra parameter, the prompt) in our model. You shouldn't
+# need to update these outside of if you want to change the optimizer itself.
+#
+# Optimizer
+# LR is set by `Trainer.learning_rate_fn`.
+# Use our MultiOptimizer wrapper to bind to the variadic
+# `*traversals_and_optimizers`
+OPTIMIZER = @adafactor_optim.MultiOptimizer()
+adafactor_optim.MultiOptimizer:
+  traversals_and_optimizers = ((@optim.ModelParamTraversal(),
+                                @adafactor.Adafactor()),)
+optim.ModelParamTraversal:
+  filter_fn = @prompt_utils.match_any()
+# Our MultiOptimzier will match any parameter with a flattened name that
+# matches any of these regular expressions.
+PROMPT_REGEX = [".*/prompt/.*"]
+prompt_utils.match_any.regexes = %PROMPT_REGEX
+
+utils.SaveCheckpointConfig.checkpointer_cls = @prompt_utils.Checkpointer
+prompt_utils.Checkpointer.save_paths = %PROMPT_REGEX
+
+# These setting allow us to partially reload a checkpoint, that is, we can load
+# most of the model weights from the checkpoint, without it complaining that we
+# don't have a weight for our prompt in the checkpoint.
+utils.RestoreCheckpointConfig:
+  # Activate the codepath that allow of the merging of the optimizer state as
+  # specified in the config (with our new parameter) and the optimizer state as
+  # defined in the checkpoint.
+  fallback_to_scratch = True
+  # Use the T5X assignment map to grab values from the checkpoint. Each entry in
+  # the map is a regular expression that matches some flatten variable in the
+  # optimizer state as defined in the model created by the config. The second
+  # value is the corresponding name in optimizer state as defined by the
+  # checkpoint. It supports interpolating capture groups from the initial regex.
+  # If the second pattern it `None` we skip trying to load this variable from
+  # the checkpoint.
+
+  # Skip trying to load all keys that have the word prompt in them, these will
+  # be initialized from scratch.
+  assignment_map = ((r"^.*prompt.*$", None),)
+
+
+# ========== From T5X configs ==========
+# These are copied over excluding because the order of things (when the
+# non-prompted architecture gin config is brought in vs the prompted one) can
+# get confusing.
+
+# Loss HParam defaults These come from T5X examples
+Z_LOSS = 0.0001
+LABEL_SMOOTHING = 0.0
+# NOTE: When fine-tuning the public checkpoints (trained in T5 MeshTF)
+# the loss normalizing factor should be set to 1024 * 229 (pretraining
+# batch_size * target_token_length).
+LOSS_NORMALIZING_FACTOR = None
+
+# Vocabulary (shared by encoder and decoder)
+VOCABULARY = @seqio.SentencePieceVocabulary()
+seqio.SentencePieceVocabulary.sentencepiece_model_file = "gs://t5-data/vocabs/cc_all.32000.100extra/sentencepiece.model"
+NUM_EMBEDDINGS = 32128
+
+# Model
+MODEL = @models.EncoderDecoderModel()
+models.EncoderDecoderModel:
+  module = %ARCHITECTURE  # provided by t5_flaxformer
+  input_vocabulary = %VOCABULARY
+  output_vocabulary = %VOCABULARY
+  optimizer_def = %OPTIMIZER
+  z_loss = %Z_LOSS
+  label_smoothing = %LABEL_SMOOTHING
+  loss_normalizing_factor = %LOSS_NORMALIZING_FACTOR

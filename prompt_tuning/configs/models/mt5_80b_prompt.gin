@@ -1,11 +1,5 @@
-# MUM 80b model.
+# MT5 80b model.
 # Provides MODEL, PROMPT, and PROMPT_LENGTH
 
-include 'prompt_tuning/configs/models/mt5_base_prompt.gin'
-
-NUM_HEADS = 256
-NUM_ENCODER_LAYERS = 16
-NUM_DECODER_LAYERS = 16
-HEAD_DIM = 64
-EMBED_DIM = 8192
-MLP_DIM = 65536
+include 'prompt_tuning/configs/models/mt5_prompt.gin'
+include 'prompt_tuning/configs/models/sizes/80b.gin'

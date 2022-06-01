@@ -1,0 +1,8 @@
+# mT5 1.1 Base Prompt model.
+# Provides MODEL, PROMPT, and PROMPT_LENGTH
+
+include 'prompt_tuning/configs/models/t5_1_1_prompt.gin'
+
+# Update the embeddings and vocab to point to the MT5 versions.
+NUM_EMBEDDINGS = 250112
+seqio.SentencePieceVocabulary.sentencepiece_model_file = "gs://t5-data/vocabs/mc4.250000.100extra/sentencepiece.model"
