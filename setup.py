@@ -37,7 +37,7 @@ with open("README.md") as fp:
 _jax_version = "0.3.1"
 # TODO Remove this when tensorflow_text (a transitive dep) is in
 # in line with tf. Or when we can turn on the better pip version resolver.
-_tf_text_version_req = "<2.9,>=2.8.0"
+_tf_text_version_req = ">=2.9"
 
 setuptools.setup(
     name="prompt-tuning",

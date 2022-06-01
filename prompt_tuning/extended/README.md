@@ -156,3 +156,17 @@ prompt is included in the loss (scaled by the hyper-parameter gamma).
 An example configuration of this setup, including how to re-use prompt
 initialization code to create the embedded discrete prompt can be found at
 [configs/extended/models/wayward_t5_1_1_base_prompt.gin](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/configs/extended/models/wayward_t5_1_1_base_prompt.gin).
+
+## IA3
+
+Another method for parameter-efficient training of Large Language models. In
+IA3, a learned scaling is appled at several places in the Neural Network. It is
+applied to the K and V values in attention and after the non-linearity in the
+feed-forward layers. This scaling is broadcast over both the sequence and the
+batch dimension. This method was introduced in
+[Liu et al., (2022)](https://arxiv.org/abs/2205.05638)
+
+[train/ia3.py](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/extended/train/ia3.py)
+implements flax modules for the scaling parameters. It also includes a fork of
+the flaxformer dense mlp module as there isn't a clean way to insert
+computation as there is in the attention module.
