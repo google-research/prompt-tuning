@@ -62,11 +62,20 @@ cd prompt-tuning
 3.  Install the Prompt Tuning library.
 
 ```sh
-python3 -m pip install .[tpu] -f https://storage.googleapis.com/jax-releases/libtpu_releases.html --use-deprecated=legacy-resolver
+python3 -m pip install .[tpu] -f https://storage.googleapis.com/jax-releases/libtpu_releases.html
 ```
 
+If you run into an error where pip tries to install earlier and earliler
+versions of dependencies (TensorFlow for example) until it tries to install
+version `0.0.0` and then fails try adding `--use-deprecated=legacy-resolver` to
+the install command. This error is related to required versions betweens
+dependencies and the behavior is often called backtracking. If you use the
+flag, it is possible that incompatible versions of libraries may be installed
+and you should look out for warnings about mismatches in the output of the
+install command.
+
 *Note:* If you plan to hack on the internals of prompt tuning and need an
-editable install (so changes in the clone code are used when you run training)
+editable install (so changes in the cloned code are used when you run training)
 run `pip` with the `-e` flag and you may need to delete the `pyproject.toml`
 file if you are getting errors during installation.
 
