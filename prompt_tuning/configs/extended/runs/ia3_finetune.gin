@@ -1,0 +1,39 @@
+# Defaults for finetuning with IA3.
+#
+# See go/t5x-finetune for instructions.
+#
+# You must also include a binding for MODEL, PROMPT, and PROMPT_LENGTH.
+#
+# Required to be set:
+#
+# - MIXTURE_OR_TASK_NAME
+# - TASK_FEATURE_LENGTHS
+# - TRAIN_STEPS  # includes pretrain steps
+# - MODEL_DIR  # automatically set when using xm_launch
+# - INITIAL_CHECKPOINT_PATH
+#
+# When launching on XManager, `MODEL_DIR` (the directory to write fine-tuned
+# checkpoints to) is configured automatically by the XManager launch script.
+# When running locally, it needs to be passed in the `gin.MODEL_DIR` flag.
+#
+# `TRAIN_STEPS` should include pre-training steps, e.g., if pre-trained ckpt
+# has 1M steps, TRAIN_STEPS = 1.1M will perform 0.1M fine-tuning steps.
+#
+# Commonly overridden options:
+# - DROPOUT_RATE
+# - BATCH_SIZE
+# - PjitPartitioner.num_partitions
+# - Trainer.num_microbatches
+# - USE_CACHED_TASKS: Whether to look for preprocessed SeqIO data, or preprocess
+#    on the fly. Most common tasks are cached, hence this is set to True by
+#    default.
+from __gin__ import dynamic_registration
+from t5x import utils
+
+include "prompt_tuning/configs/runs/prompt_finetune.gin"
+
+# ========== These are IA3 HPs you might want to override ==========
+utils.create_learning_rate_scheduler:
+  factors = "constant"
+  # Learning rate from the paper.
+  base_learning_rate = 3e-3
