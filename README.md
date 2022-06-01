@@ -265,9 +265,16 @@ We follow the T5X configuration layout:
 *   `models/` :: contains configs that set model specific parameters like the
     number of layers or the size of the embedding table. It also configures
     things like the T5X model wrapper used.
-*   `decoding/` :: contains easy to use configs to swap out how the model
-    generates text during inference, includes configs for beam search and
-    nucleus sampling.
+  *   `models/decoding/` :: contains easy to use configs to swap out how the
+      model generates text during inference, includes configs for beam search
+      and nucleus sampling.
+  *   `models/sizes/` :: contains the various settings to create models of
+      different sizes, these are combined with the default versions to create a
+      sized version, for example,`t5_1_1_prompt.gin` + `sizes/large.gin`
+      creates a T5 1.1 Large model. Some common combinations already available
+      as gin files with the right includes (`t5_1_1_large_prompt.gin` for our
+      example above). _Note:_ These size files need to come __after__ the main
+      model file.
 *   `prompts/` :: Our extra directory contains configs that set the `PROMPT` gin
     variable, allowing for easy switching of the prompt initialization based
     which prompt file is added as a `--gin_file` argument (it needs to come
@@ -280,6 +287,7 @@ The general order in which the gin files must be specified is:
 
 1.  `models/*.gin`
 1.  `prompts/*.gin`
+1.  `models/sizes/*.gin*`
 1.  `models/decoding/*.gin`
 1.  `runs/*.gin`
 
