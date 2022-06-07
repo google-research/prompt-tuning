@@ -44,6 +44,7 @@ multitask_prompts.AddMultiTaskPrompt:
   to_task_idx = @multitask_prompts.sentinel_to_task
   shared_init = @shared_init/linen.initializers.uniform()
   tasks_init = @tasks_init/linen.initializers.uniform()
+  dtype = %ACTIVATION_DTYPE
 shared_init/linen.initializers.uniform.scale = 0.5
 tasks_init/linen.initializers.uniform.scale = 0.5
 multitask_prompts.sentinel_to_task.vocab_size = 32100

@@ -382,10 +382,13 @@ class Prompt(nn.Module):
   Attributes:
     length: The length of the prompt, P.
     prompt_init: An initializer function for the variable.
+    axis_names: Logical names for the parameter axes.
+    dtype: The dtype of the activations for this module.
   """
   length: int
   prompt_init: Initializer = nn.initializers.uniform()
   axis_names: Tuple[str, str] = ("prompt", "embed")
+  dtype: DType = jnp.float32
 
   @nn.compact
   def __call__(self, x, x_embed):
@@ -404,4 +407,5 @@ class Prompt(nn.Module):
         self.prompt_init,
         (self.length, embed_dim),
         axes=self.axis_names)
+    prompt = prompt.astype(self.dtype)
     return prompt
