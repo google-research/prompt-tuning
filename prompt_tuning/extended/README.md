@@ -170,3 +170,20 @@ and the batch dimension. This method was introduced in
 implements flax modules for the scaling parameters. It also includes a fork of
 the flaxformer dense mlp module as there isn't a clean way to insert
 computation as there is in the attention module.
+
+## Per-Layer Parameters
+
+It is also possible to have a prompt variable at each layer of the model as a
+way to include more parameters, or to make the optimization problem easier. This
+represents a midpoint between Prompt Tuning and Prefix Tuning
+[(Li and Liang, 2021)](https://arxiv.org/abs/2101.00190) as there is a single
+prompt variable at each layer that is projected to Q,K,V using the projections
+from the frozen model instead of directly learning the K,V values. It also does
+not support the reparameterization from Prefix Tuning.
+
+If the `add_prompt` combination function is used instead of `replace_prompt` the
+resulting model is closer to
+[Qin and Eisner (2021)](https://arxiv.org/abs/2104.06599).
+
+The rest of the Prompt Tuning subclasses still need to be used so that attention
+masking is updated to account for the new prompt variables.
