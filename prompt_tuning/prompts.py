@@ -382,12 +382,20 @@ class Prompt(nn.Module):
   Attributes:
     length: The length of the prompt, P.
     prompt_init: An initializer function for the variable.
-    axis_names: Logical names for the parameter axes.
+    axis_names: Logical names for the parameter axes. Note: We use
+      "prompt_embed" as the second dimension so that the prompt is always
+      replicated, even when using 2-way parameter partitioning when the "embed"
+      dimension would get partitioned. This makes it possible to save the prompt
+      as a numpy file. If the prompt needs to be partitioned, one can change the
+      second dimension to "embed", but the prompt variable will need to be
+      managed by the t5x checkpointing utilities (i.e. the numpy checkpoint will
+      not be the full prompt and you will need to save multiple t5x checkpoints)
+      and `prompt_tuning.scripts.extract_variable` to create a numpy checkpoint.
     dtype: The dtype of the activations for this module.
   """
   length: int
   prompt_init: Initializer = nn.initializers.uniform()
-  axis_names: Tuple[str, str] = ("prompt", "embed")
+  axis_names: Tuple[str, str] = ("prompt", "prompt_embed")
   dtype: DType = jnp.float32
 
   @nn.compact
