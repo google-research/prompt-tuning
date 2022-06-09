@@ -63,9 +63,6 @@ optim.ModelParamTraversal:
 TRAINABLE_REGEX = [".*/ia3_scaling.*"]
 prompt_utils.match_any.regexes = %TRAINABLE_REGEX
 
-utils.SaveCheckpointConfig.checkpointer_cls = @prompt_utils.Checkpointer
-prompt_utils.Checkpointer.save_paths = %TRAINABLE_REGEX
-
 # These settings allow us to partially reload a checkpoint, that is, we can load
 # most of the model weights from the checkpoint, without it complaining that we
 # don't have a weight for our ia3 scaling values in the checkpoint.

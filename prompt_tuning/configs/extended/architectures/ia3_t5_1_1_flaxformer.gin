@@ -4,6 +4,7 @@ from __gin__ import dynamic_registration
 
 from flax import linen
 from prompt_tuning.extended.train import ia3
+from flaxformer.components import dense
 from flaxformer.components.attention import dense_attention
 from flaxformer.architectures.t5 import t5_architecture
 
@@ -17,20 +18,8 @@ dense_attention.MultiHeadDotProductAttention:
 ia3.IA3Attention:
   dtype = %ACTIVATION_DTYPE
 
-ia3.MlpBlock:
-  use_bias = False
-  intermediate_dim = %MLP_DIM
-  activations = ('gelu', 'linear')
-  kernel_init = @mlp_kernel_init/linen.initializers.variance_scaling()
-  bias_init = %BIAS_INIT
-  intermediate_dropout_rate = %DROPOUT_RATE
-  final_dropout_rate = 0
-  dtype = %ACTIVATION_DTYPE
-  ia3 = @ia3.IA3()
-
-# Override the mlp field of the encoder and decoder layers
-t5_architecture.EncoderLayer.mlp = @ia3.MlpBlock()
-t5_architecture.DecoderLayer.mlp = @ia3.MlpBlock()
+dense.MlpBlock:
+  intermediate_conv = @ia3.IA3()
 
 ia3.IA3:
   axis_name = ('mlp',)
