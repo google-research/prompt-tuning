@@ -19,4 +19,4 @@ from t5x import partitioning
 
 def standard_logical_axis_rules() -> partitioning.LogicalAxisRules:
   """Add prompt specific partitioning rules."""
-  return (("prompt", None),)
+  return (("prompt", None), ("prompt_embed", None))
