@@ -417,3 +417,31 @@ class Prompt(nn.Module):
         axes=self.axis_names)
     prompt = prompt.astype(self.dtype)
     return prompt
+
+
+class InferenceOnlyPrompt(nn.Module):
+  """An inference only prompt that reads from a file.
+
+  This is a Prompt that sidesteps some memory issues when loading a prompt for
+  inference. Instead of the prompt being an actual parameter of the model, it
+  is loaded with a constant that is not updated over time.
+
+  When using this module `fallback_to_scratch` should be set to `false`.
+
+  Attributes:
+    length: The length of the prompt.
+    embed_dim: The size of the embeddings (number of features in the prompt).
+    prompt_init: How to initialize the prompt.
+    dtype: What dtype the prompt should be.
+  """
+  length: int
+  embed_dim: int
+  prompt_init: Initializer = nn.initializers.uniform()
+  dtype: DType = jnp.float32
+
+  def setup(self):
+    self.prompt = jnp.array(
+        self.prompt_init(jax.random.PRNGKey(0), (self.length, self.embed_dim)))
+
+  def __call__(self, x, x_embed):
+    return self.prompt.astype(self.dtype)
