@@ -19,7 +19,7 @@ towards the embedded representation of a discrete prompt from
 Khashabi, et al. (2021) https://arxiv.org/abs/2112.08348
 """
 
-from typing import Any, Callable, List, Mapping, Optional, Sequence
+from typing import Any, Callable, List, Mapping, Optional, Sequence, Union
 
 from flax import linen as nn
 from flax import optim
@@ -38,8 +38,31 @@ def length(x: Any) -> int:
   return len(x)
 
 
-def encode_string(s: str, vocab: seqio.SentencePieceVocabulary) -> List[str]:
-  """Break a string into sentence pieces."""
+def encode_string(
+    s: str,
+    vocab: seqio.SentencePieceVocabulary,
+    format_values: Optional[Union[Sequence[Any], Mapping[str, Any]]] = None
+) -> List[str]:
+  """Break an (interpolated) string into sentence pieces.
+
+  Args:
+    s: The string to tokenize, can have `{}` (or `{field_name}`) formatting
+      markup.
+    vocab: The vocabulary used to tokenize `s`.
+    format_values: The values to interpolate with `s`. If `None`, no
+      interpolation is done. If the values are a mapping they are double star
+      unpacked and the keys should match the `{field_name}` formatting in `s`.
+      Otherwise it is single start unpacked and they `{}` formatting fields are
+      filled in order.
+
+  Returns:
+    Possibly interpolated `s` broken into sentence pieces.
+  """
+  if format_values is not None:
+    if isinstance(format_values, Mapping):
+      s = s.format(**format_values)
+    else:
+      s = s.format(*format_values)
   return vocab.tokenizer.EncodeAsPieces(s)
 
 
