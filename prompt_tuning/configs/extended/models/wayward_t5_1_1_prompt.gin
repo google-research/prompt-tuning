@@ -23,17 +23,23 @@ include 'prompt_tuning/configs/models/t5_1_1_prompt.gin'
 
 # SST2 preprocessors in t5 result in spacing around punctuation which we
 # include here.
-TASK_STRING = ("Classify these movie reviews based on sentiment . Use 2 "
-               "classes . One positive ( for reviews that paint the movie in "
-               "a favorable light ) and one negative ( for reviews that make "
-               "you not want to see the movie ) . Use the string ` positive ` "
-               "for the positive class , the good movies , and use the string "
-               "` negative ` for the negative class , the bad movies .")
+TASK_STRING = (
+    "Classify this movie review based on its sentiment . Use 2 "
+    "classes . One positive ( for reviews that paint the movie in "
+    "a favorable light ) and one negative ( for reviews that make "
+    "you not want to see the movie or think it will be bad ) . Use "
+    "the string ` positive ` for the positive class , the good / "
+    "great movies , and use the string ` negative ` for the negative "
+    "class , the bad movies ."
+)
+
+VERBALIZERS = None
 
 TASK_PIECES = @wayward.encode_string()
 wayward.encode_string:
   s = %TASK_STRING
   vocab = %VOCABULARY
+  format_values = %VERBALIZERS
 
 PROMPT_LENGTH = @wayward.length()
 wayward.length.x = %TASK_PIECES
