@@ -345,6 +345,27 @@ class PromptsTest(parameterized.TestCase):
       choice_mock.assert_called_once_with(rng, population_size,
                                           (prompt_length,), True)
 
+  @parameterized.parameters([jnp.float32, jnp.bfloat16])
+  def test_inference_only_prompt(self, dtype):
+    length = 5
+    embed_dim = 256
+    prompt_file = os.path.join(TEST_DATA, "prompt_5x256.npy")
+    prompt_init = prompts.from_array(prompts.np_load(prompt_file))
+
+    prompt_module = prompts.InferenceOnlyPrompt(
+        length, embed_dim, prompt_init, dtype)
+    _ = prompt_module.init(
+        jax.random.PRNGKey(0), jnp.zeros((1, 2)), jnp.zeros((1, 2, 5)))
+    prompt = jax.jit(prompt_module.apply)(
+        {}, jnp.zeros((1, 2)), jnp.zeros((1, 2, 5)))
+
+    prompt_from_file = jnp.array(load_numpy(TEST_DATA)).astype(dtype)
+    self.assertEqual(prompt.shape, (length, embed_dim))
+    self.assertEqual(prompt.dtype, dtype)
+    # Cast all to float32 as bfloat16 was causing issues in the allclose.
+    np.testing.assert_allclose(prompt.astype(jnp.float32),
+                               prompt_from_file.astype(jnp.float32))
+
 
 if __name__ == "__main__":
   absltest.main()
