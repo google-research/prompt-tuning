@@ -1,0 +1,13 @@
+# T5.1.1 Large Prompt model with a wayward prompt.
+#
+# This is a standard prompt tuning training run except we have an extra term in
+# our loss function that regularizes the learned prompt towards the embedded
+# representation of a discrete prompt from Khashabi, et al. (2021)
+# https://arxiv.org/abs/2112.08348
+#
+# Provides MODEL, PROMPT, and PROMPT_LENGTH.
+#
+# You can set TASK_STRING to update the task description we are trying to match.
+
+include 'prompt_tuning/configs/extended/models/wayward_t5_1_1_prompt.gin'
+include 'prompt_tuning/configs/models/sizes/large.gin'
