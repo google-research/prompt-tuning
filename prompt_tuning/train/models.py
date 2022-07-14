@@ -175,9 +175,12 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
     # just need the shift in the location of the EOS to change appropriately.
     # Thus we can use this padding with experiments where the prompt is not
     # prepended.
-    prompt_pad = jnp.full((inputs.shape[0], self.prompt_length), 2,
+    prompt_pad = jnp.full((inputs.shape[0], self.prompt_length),
+                          2,
                           dtype=inputs.dtype)
     inputs_with_fake_prompts = jnp.concatenate([prompt_pad, inputs], axis=1)
+
+    scanned = hasattr(self.module, 'scan_layers') and self.module.scan_layers
 
     # Using the above-defined single-step decoder function, run a decoding
     # function that will produces a [batch, 1, max_decode_length] output.
@@ -188,6 +191,7 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
         eos_id=self.output_vocabulary.eos_id,
         num_decodes=num_decodes,
         initial_index=prefill_lengths,
+        cache_offset=1 if scanned else 0,
         **decoder_params)
 
     if not return_all_decodes:
