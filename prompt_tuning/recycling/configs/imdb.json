@@ -1,0 +1,104 @@
+{
+  "root_dir": "...",
+  "dataset": "imdb",
+  "task_name": "pr:imdb_v100_negative_positive_verbalizers_test_rc",
+  "clobber": false,
+  "steps": [1102000, 1105000, 1110000, 1120000],
+  "load_embeddings": {
+    "default": {
+      "word_list_path": "prompt_tuning/recycling/data/filtered-vocab-english-only.json",
+      "num_words": 4000,
+      "word_offset": 1000
+    }
+  },
+  "recycling_methods": {
+    "jax-nn": {
+      "__init__": {
+        "hidden_scale": 4
+      },
+      "fit": {
+        "batch_size": 50,
+        "learning_rate": 0.0003,
+        "epochs": 25
+      }
+    },
+    "tf-lstsq": {},
+    "linear-combination": {}
+  },
+  "pretrained": {
+    "Seed 0": "...",
+    "Seed 2000": "...",
+    "Default": "gs://t5-data/pretrained_models/t5x/t5_1_1_lm100k_base/checkpoint_1100000",
+    "Large": "gs://t5-data/pretrained_models/t5x/t5_1_1_lm100k_large/checkpoint_1100000"
+  },
+  "prompts": {
+    "Seed 0": {
+      "class-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 10k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 50k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      }
+    },
+    "Seed 2000": {
+      "class-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 10k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 50k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      }
+    },
+    "Default": {
+      "class-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 10k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 50k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      }
+    },
+    "Large": {
+      "class-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 10k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 50k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      }
+    }
+  }
+}

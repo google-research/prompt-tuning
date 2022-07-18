@@ -1,0 +1,149 @@
+{
+  "root_dir": "...",
+  "dataset": "sst2",
+  "task_name": "pr:glue_sst2_v200_test_rc",
+  "clobber": false,
+  "steps": [1102000, 1105000, 1110000, 1120000],
+  "load_embeddings": {
+    "default": {
+      "word_list_path": "prompt_tuning/recycling/data/filtered-vocab-english-only.json",
+      "num_words": 4000,
+      "word_offset": 1000
+    },
+    "from_string": {
+      "vocab_file": "gs://t5-data/vocabs/cc_all.32000.100extra/sentencepiece.model",
+      "variable_path": "token_embedder/embedding",
+      "string": "Classify this movie review based on its sentiment . Use 2 classes . One positive ( for reviews that paint the movie in a favorable light ) and one negative ( for reviews that make you not want to see the movie or think it will be bad ) . Use the string ` positive ` for the positive class , the good / great movies , and use the string ` negative ` for the negative class , the bad movies ."
+    }
+  },
+  "recycling_methods": {
+    "jax-nn": {
+      "__init__": {
+        "hidden_scale": 4
+      },
+      "fit": {
+        "batch_size": 50,
+        "learning_rate": 0.0003,
+        "epochs": 25
+      }
+    },
+    "tf-lstsq": {},
+    "linear-combination": {}
+  },
+  "pretrained": {
+    "Seed 0": "...",
+    "Seed 2000": "...",
+    "Default": "gs://t5-data/pretrained_models/t5x/t5_1_1_lm100k_base/checkpoint_1100000",
+    "Large": "gs://t5-data/pretrained_models/t5x/t5_1_1_lm100k_large/checkpoint_1100000"
+  },
+  "prompts": {
+    "Seed 0": {
+      "rand-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "class-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 10k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 50k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "wayward": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      }
+    },
+    "Seed 2000": {
+      "rand-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "class-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 10k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 50k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "wayward": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      }
+    },
+    "Default": {
+      "rand-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "class-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 10k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 50k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "wayward": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      }
+    },
+    "Large": {
+      "rand-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "class-init": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 10k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "spot 50k": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      },
+      "wayward": {
+        "run 1": "...",
+        "run 2": "...",
+        "run 3": "..."
+      }
+    }
+  }
+}
