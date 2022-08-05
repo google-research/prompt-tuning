@@ -1,0 +1,12 @@
+# Architecture overrides
+NUM_ENCODER_LAYERS = 32
+NUM_DECODER_LAYERS = 32
+NUM_HEADS = 96
+HEAD_DIM = 128
+EMBED_DIM = 12288
+MLP_DIM = 36864
+
+# 150B was trained on 12x16x16, want this divisible by 384 for extra sharding.
+# c.f. run part 1 - https://xm2a.corp.google.com/experiments/26046584
+# c.f. run part 2 - https://xm2a.corp.google.com/experiments/26544332
+NUM_EMBEDDINGS = 250368
