@@ -1,0 +1,61 @@
+# MUM 150b model.
+# Provides MODEL, PROMPT, and PROMPT_LENGTH
+
+from __gin__ import dynamic_registration
+
+from flaxformer.architectures.t5 import t5_architecture
+from prompt_tuning.train import layers as prompt_layers
+import seqio
+from t5x import adafactor
+
+include 'prompt_tuning/configs/models/t5_1_1_prompt.gin'
+include 'prompt_tuning/configs/models/sizes/150b.gin'
+
+VOCABULARY = @seqio.SentencePieceVocabulary()
+seqio.SentencePieceVocabulary.sentencepiece_model_file = "gs://t5-data/vocabs/mc4.250000.100extra/sentencepiece.model"
+
+LAYER_REMAT = 'full'
+
+# Custom Adafactor Rules needed below.
+# ------------------------------------------------------------------------------
+adafactor.Adafactor.factor_map = @adafactor.HParamMap()
+adafactor.HParamMap.rules = @adafactor.standard_factor_rules()
+adafactor.standard_factor_rules.scan_layers = True
+
+# Scanned Layers
+#-------------------------------------------------------------------------------
+t5_architecture.DecoderLayer:
+  scanned = True
+
+t5_architecture.Decoder:
+  shared_relative_position_bias_factory = None
+  scan_layers = True
+  layer_remat = %LAYER_REMAT
+
+t5_architecture.EncoderLayer:
+  scanned = True
+
+t5_architecture.Encoder:
+  shared_relative_position_bias_factory = None
+  scan_layers = True
+  layer_remat = %LAYER_REMAT
+
+t5_architecture.EncoderDecoder:
+  scan_layers = True
+
+t5_architecture.DecoderOnly:
+  scan_layers = True
+
+prompt_layers.PromptEncoder:
+  shared_relative_position_bias_factory = None
+  scan_layers = True
+  layer_remat = %LAYER_REMAT
+
+prompt_layers.PromptDecoder:
+  shared_relative_position_bias_factory = None
+  scan_layers = True
+  layer_remat = %LAYER_REMAT
+
+prompt_layers.PromptEncoderDecoder:
+  scan_layers = True
+

@@ -1,0 +1,10 @@
+# Architecture overrides
+NUM_ENCODER_LAYERS = 32
+NUM_DECODER_LAYERS = 32
+NUM_HEADS = 96
+HEAD_DIM = 128
+EMBED_DIM = 12288
+MLP_DIM = 36864
+
+# 150B uses same vocab as smaller models, extra tokens were added for sharding.
+NUM_EMBEDDINGS = 250368
