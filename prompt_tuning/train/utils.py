@@ -27,6 +27,7 @@ import flax
 from flax import optim
 from flax import traverse_util
 import jax
+from jax.experimental import global_device_array as gda_lib
 from jax.experimental import multihost_utils
 import numpy as np
 from t5x import checkpoints
@@ -35,6 +36,13 @@ from t5x import train_state as train_state_lib
 from tensorflow.io import gfile
 
 PartitionRule = Tuple[str, Optional[partitioning.PartitionSpec]]
+
+
+def _get_local_data(x):
+  if isinstance(x, gda_lib.GlobalDeviceArray):
+    return x.local_data(0)
+  else:
+    return x
 
 
 def match_any(regexes: Sequence[str]) -> Callable[[str, Any], bool]:
@@ -120,7 +128,10 @@ class Checkpointer(checkpoints.Checkpointer):
         if self.save_matcher(flat_name, None):
           dotted_name = flat_name.replace('/', '.')
           output_path = os.path.join(tmp_dir, dotted_name)
-          np_save(output_path, np.array(value).astype(self._save_dtype))
+          # Tunable prompts are not sharded, so `_get_local_data` should return
+          # the full array.
+          np_save(output_path,
+                  np.array(_get_local_data(value)).astype(self._save_dtype))
     multihost_utils.sync_global_devices(
         f'checkpointer:save_numpy:writes_complete: {tmp_dir}')
     if jax.process_index() != 0:
@@ -145,6 +156,6 @@ class Checkpointer(checkpoints.Checkpointer):
                checkpoints.SaveStateTransformationFn] = (),
            *,
            concurrent_gb: int = 128):
-    self.save_numpy(train_state.params, train_state.step)
+    self.save_numpy(train_state.params, int(_get_local_data(train_state.step)))
     super().save(
         train_state, state_transformation_fns, concurrent_gb=concurrent_gb)
