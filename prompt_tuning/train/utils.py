@@ -40,7 +40,7 @@ PartitionRule = Tuple[str, Optional[partitioning.PartitionSpec]]
 
 def _get_local_data(x):
   if isinstance(x, gda_lib.GlobalDeviceArray):
-    return x.local_data(0)
+    return x.addressable_data(0)
   return x
 
 
