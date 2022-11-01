@@ -65,3 +65,7 @@ If you make use of this code or idea please cite:
     pages = "5039--5059",
 }
 ```
+
+## Note
+
+This is not an officially supported Google product.
