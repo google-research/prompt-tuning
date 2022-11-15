@@ -18,7 +18,7 @@ Example usage:
 python -m prompt_tuning.scripts.extract_variable \
   --checkpoint_dir=/path/to/t5x/checkpoint_step \
   --variable_path=target/encoder/prompt/prompt/prompt \
-  --restore_type=float32 \
+  --restore_dtype=float32 \
   --output_path=/path/to/save/prompt.npy
 
 """
