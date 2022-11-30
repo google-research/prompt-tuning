@@ -48,7 +48,7 @@ class PromptEncoder(t5_architecture.Encoder):
     self.prompt = self.prompt_factory()
     self.add_fake_prompt = self.add_fake_prompt_factory()
 
-  def embed_and_combine_inputs(self,
+  def embed_and_combine_inputs(self,  # pytype: disable=signature-mismatch  # overriding-parameter-name-checks
                                inputs,
                                inputs_positions=None,
                                *,
@@ -78,7 +78,7 @@ class PromptEncoder(t5_architecture.Encoder):
     embedded_inputs = embedded_inputs.astype(self.dtype)
     return embedded_inputs
 
-  def __call__(self,
+  def __call__(self,  # pytype: disable=signature-mismatch  # overriding-parameter-name-checks
                inputs,
                inputs_positions=None,
                encoder_mask=None,
@@ -132,7 +132,7 @@ class PromptDecoder(t5_architecture.Decoder):
     self.add_fake_prompt = self.add_fake_prompt_factory()
     self.prompt = self.prompt_factory()
 
-  def embed_and_combine_inputs(
+  def embed_and_combine_inputs(  # pytype: disable=signature-mismatch  # overriding-parameter-name-checks
       self,
       decoder_input_tokens,
       decoder_positions=None,
@@ -169,7 +169,7 @@ class PromptDecoder(t5_architecture.Decoder):
     embedded_inputs = embedded_inputs.astype(self.dtype)
     return embedded_inputs
 
-  def __call__(self,
+  def __call__(self,  # pytype: disable=signature-mismatch  # overriding-parameter-name-checks
                encoder_outputs,
                decoder_input_tokens,
                decoder_positions=None,
@@ -286,7 +286,7 @@ class PromptEncoderDecoder(t5_architecture.EncoderDecoder):
         encoder_mask=encoder_mask,
         enable_dropout=enable_dropout)
 
-  def decode(
+  def decode(  # pytype: disable=signature-mismatch  # overriding-parameter-name-checks
       self,
       encoded,
       encoder_input_tokens,  # only needed for masks
