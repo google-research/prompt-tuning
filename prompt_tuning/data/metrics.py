@@ -65,7 +65,7 @@ def format_classification(indices: Sequence[int],
 # pylint: disable=unused-argument
 def format_qa(indices: Sequence[int],
               examples: List[Mapping[str, Any]],
-              context_field: str = constants.CONTEXT_TEXT,
+              context_field: Optional[str] = constants.CONTEXT_TEXT,
               question_field: str = constants.QUESTION_TEXT,
               answers_field: str = constants.ANSWERS_TEXT,
               prediction_field: str = constants.PREDICTION_TEXT,
@@ -75,13 +75,17 @@ def format_qa(indices: Sequence[int],
   for idx in indices:
     ex = examples[idx]
     answers = sorted(set(six.ensure_text(a) for a in ex[answers_field]))
-    example_text = textwrap.dedent(f"""
-      context: {six.ensure_text(ex[context_field])}\n
-      question: {six.ensure_text(ex[question_field])}\n
-      answers: {"; ".join(answers)}\n
-      prediction: {six.ensure_text(ex[prediction_field])}\n
-      """.lstrip("\n"))
-    texts.append(example_text)
+    example_lines = [
+        f"question: {six.ensure_text(ex[question_field])}",
+        f'answers: {"; ".join(answers)}',
+        f"prediction: {six.ensure_text(ex[prediction_field])}",
+    ]
+    if context_field:
+      example_lines = [
+          f"context: {six.ensure_text(ex[context_field])}"
+      ] + example_lines
+
+    texts.append("\n".join(example_lines))
   return "\n\n".join(texts)
 
 

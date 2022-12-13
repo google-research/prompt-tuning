@@ -158,6 +158,46 @@ class MetricsTest(absltest.TestCase):
       self.assertEqual(
           ast.literal_eval(line.rsplit(":", maxsplit=1)[1].strip()), metric)
 
+  def test_format_qa_include_context(self):
+    example = [
+        {
+            "context": "The meaning of life is 42.",
+            "question": "What is the meaning of life?",
+            "answers": ["42", "forty two"],
+            "prediction_pretokenized": "42",
+        },
+        {
+            "context": "The meaning of life is 42.",
+            "question": "What is the meaning of life?",
+            "answers": ["42", "forty two"],
+            "prediction_pretokenized": "42",
+        },
+    ]
+
+    idx = list(range(len(example)))
+
+    self.assertIn("context:", metrics.format_qa(idx, example))
+
+  def test_format_qa_no_context(self):
+    example = [
+        {
+            "question": "What is the meaning of life?",
+            "answers": ["42", "forty two"],
+            "prediction_pretokenized": "42",
+        },
+        {
+            "question": "What is the meaning of life?",
+            "answers": ["42", "forty two"],
+            "prediction_pretokenized": "42",
+        },
+    ]
+
+    idx = list(range(len(example)))
+
+    self.assertNotIn(
+        "context:", metrics.format_qa(idx, example, context_field=None)
+    )
+
 
 if __name__ == "__main__":
   absltest.main()
