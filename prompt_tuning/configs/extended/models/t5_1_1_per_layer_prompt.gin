@@ -8,18 +8,19 @@
 # ginlint: disable=bad-import-order
 from __gin__ import dynamic_registration
 
-from flax import optim
 import seqio
 from t5x import models
 from t5x import utils
 from t5x import adafactor
+from t5x import optimizers as optim
 from flax import linen
+from flax import traverse_util
 
 from prompt_tuning import prompts
 from prompt_tuning.extended.train import per_layer
 from prompt_tuning.train import prompts as train_prompts
 from prompt_tuning.train import utils as prompt_utils
-from prompt_tuning.train import optim as adafactor_optim
+from prompt_tuning.train import optim as pt_optim
 
 ARCHITECTURE = %gin.REQUIRED
 
@@ -59,7 +60,7 @@ adafactor.Adafactor:
   step_offset = 0
   multiply_by_parameter_scale = False
   weight_decay_rate = 0.00001
-  logical_factor_rules = @adafactor_optim.standard_logical_factor_rules()
+  logical_factor_rules = @pt_optim.standard_logical_factor_rules()
 
 # ========== Partial Loading ==========
 # The following is the configuration the allows to partial load a model (all the
@@ -71,11 +72,11 @@ adafactor.Adafactor:
 # LR is set by `Trainer.learning_rate_fn`.
 # Use our MultiOptimizer wrapper to bind to the variadic
 # `*traversals_and_optimizers`
-OPTIMIZER = @adafactor_optim.MultiOptimizer()
-adafactor_optim.MultiOptimizer:
-  traversals_and_optimizers = ((@optim.ModelParamTraversal(),
+OPTIMIZER = @optim.MultiOptimizer()
+optim.MultiOptimizer:
+  traversals_and_optimizers = ((@traverse_util.ModelParamTraversal(),
                                 @adafactor.Adafactor()),)
-optim.ModelParamTraversal:
+traverse_util.ModelParamTraversal:
   filter_fn = @prompt_utils.match_any()
 # Our MultiOptimzier will match any parameter with a flattened name that
 # matches any of these regular expressions.
