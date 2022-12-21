@@ -15,11 +15,15 @@
 """T5X model subclasses for prompt tuning."""
 
 import functools
-from typing import Optional, Mapping, MutableMapping, Any, Tuple
+from typing import Optional, Mapping, MutableMapping, Any, Tuple, Union
+
+from flax.core import scope as flax_scope
 import jax
 import jax.numpy as jnp
 from t5x import models
 from flaxformer.types import Array
+
+PyTree = Any
 
 
 class PromptDecoderOnlyModel(models.DecoderOnlyModel):
@@ -32,13 +36,26 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
     super().__init__(*args, **kwargs)
     self.prompt_length = prompt_length
 
-  def _compute_logits(self,  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
-                      params: Mapping[str, Array],
-                      batch: Mapping[str, jnp.ndarray],
-                      dropout_rng: Optional[jnp.ndarray] = None) -> jnp.ndarray:
+  # Signature mismatch because this may return a tuple including intermediates,
+  # instead of only the logits array.
+  def _compute_logits(  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
+      self,
+      params: Mapping[str, Array],
+      batch: Mapping[str, jnp.ndarray],
+      dropout_rng: Optional[jnp.ndarray] = None,
+      mutable: flax_scope.CollectionFilter = False,
+      other_variables: Optional[PyTree] = None,
+  ) -> Union[jnp.ndarray, Tuple[jnp.ndarray, flax_scope.FrozenVariableDict]]:
     """Hack off the prompt when calculating logits."""
-    logits = super()._compute_logits(params, batch, dropout_rng)
-    return logits[:, self.prompt_length:]
+    logits = super()._compute_logits(params, batch, dropout_rng, mutable,
+                                     other_variables)
+    if isinstance(logits, tuple) and len(logits) > 1:
+      # Intermediates were returned.
+      modified_vars = logits[1:]
+      logits = logits[0][:, self.prompt_length:]  # Remove prompt logits.
+      return (logits, *modified_vars)  # pytype: disable=bad-return-type
+    else:
+      return logits[:, self.prompt_length:]
 
   def predict_batch_with_aux(
       self,
