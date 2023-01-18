@@ -52,6 +52,14 @@ flags.DEFINE_string(
     "output_path",
     None,
     "The path to where the numpy variable should be saved.")
+flags.DEFINE_integer(
+    "sample", 100, "Number of samples to keep (sampled with replacement). "
+    "If <= 0 keep all."
+)
+flags.DEFINE_integer("population_size", 5000,
+                     "Limit the drawing to the first `population_size` vectors."
+                     " If <= 0 then there is no limit."
+                     )
 flags.mark_flag_as_required("checkpoint_dir")
 flags.mark_flag_as_required("variable_path")
 flags.mark_flag_as_required("output_path")
@@ -110,6 +118,14 @@ def main(argv: Sequence[str]):
   logging.info("Read variable with shape %s", variable.shape)
 
   logging.info("Saving variable to %s", FLAGS.output_path)
+
+  if FLAGS.sample > 0:
+    rng: np.random.Generator = np.random.default_rng()
+    if FLAGS.population_size > 0:
+      indices = rng.choice(FLAGS.population_size, FLAGS.sample)
+      variable = variable[indices]
+    else:
+      variable = rng.choice(variable, FLAGS.sample)
   save_variable(FLAGS.output_path, variable)
 
 
