@@ -10,7 +10,7 @@ defines the model and training loop;
 model computation; [Flax](https://github.com/google/flax), which defines the low
 level model layers; and [Jax](https://github.com/google/jax), which provides the
 actual execution. Details of our implementation can be found
-[here](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/implementation.md).
+[here](https://github.com/google-research/prompt-tuning/blob/main/implementation.md).
 
 ## Table of Contents
 
