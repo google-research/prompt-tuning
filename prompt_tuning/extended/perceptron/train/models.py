@@ -83,7 +83,7 @@ class ValidLabelsOnlyEncoderDecoderModel(models.EncoderDecoderModel):
                 "decoder_target_tokens",
                 "decoder_loss_weights"):
       if key in input_shapes:
-        input_shapes[key] = shape_fold(input_shapes[key])
+        input_shapes[key] = shape_fold(input_shapes[key])  # pytype: disable=wrong-arg-types  # jax-ndarray
     return super().get_initial_variables(
         rng, input_shapes, input_types)
 
@@ -107,7 +107,7 @@ class ValidLabelsOnlyEncoderDecoderModel(models.EncoderDecoderModel):
         logits,
         common_utils.onehot(
             folded_batch["decoder_target_tokens"],
-            logits.shape[-1],
+            logits.shape[-1],  # pytype: disable=attribute-error  # jax-ndarray
             on_value=1,
             off_value=0),
         z_loss=0.0)[0] * folded_batch["decoder_loss_weights"]
