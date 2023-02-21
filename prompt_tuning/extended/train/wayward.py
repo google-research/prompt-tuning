@@ -97,7 +97,7 @@ def squared_l2_distance(x: Array, y: Array) -> Array:
 class WaywardPromptEncoderDecoderModel(models.EncoderDecoderModel):
   """Regularize a prompt towards a discrete representation a la (Khashabi, et al., 2021)."""
 
-  def __init__(
+  def __init__(  # pytype: disable=annotation-type-mismatch  # jax-ndarray
       self,
       module: nn.Module,
       input_vocabulary: seqio.Vocabulary,
