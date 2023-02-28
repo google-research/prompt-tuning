@@ -92,7 +92,7 @@ def check_difference(a: ckpt_impt.LazyArray,
   diff = np.isclose(a, b)
   if np.all(diff):
     return None
-  total = np.prod(a.shape)
+  total = np.prod(a.shape)  # pytype: disable=attribute-error  # jax-ndarray
   match = np.sum(diff.astype(np.uint8))
   mismatch = total - match
   return {
