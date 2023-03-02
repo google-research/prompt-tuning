@@ -85,6 +85,7 @@ def t5x_load(checkpoint_path: str,
   """
   ckpt = checkpoints.load_t5x_checkpoint(checkpoint_path,
                                          restore_dtype=restore_dtype,
+                                         use_gda=False,
                                          lazy_parameters=True)
   ckpt = {"/".join(k): v for k, v in traverse_util.flatten_dict(ckpt).items()}
   variable_path = re.sub(r"^(target)?/", "", variable_path)
