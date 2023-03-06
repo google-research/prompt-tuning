@@ -27,7 +27,6 @@ import flax
 from flax import optim
 from flax import traverse_util
 import jax
-from jax.experimental import global_device_array as gda_lib
 from jax.experimental import multihost_utils
 import numpy as np
 from t5x import checkpoints
@@ -39,7 +38,7 @@ PartitionRule = Tuple[str, Optional[partitioning.PartitionSpec]]
 
 
 def _get_local_data(x):
-  if isinstance(x, gda_lib.GlobalDeviceArray):
+  if isinstance(x, jax.Array):
     return x.addressable_data(0)
   return x
 
