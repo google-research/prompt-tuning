@@ -22,9 +22,6 @@ from t5x import models
 from flaxformer.types import Array
 
 
-PyTreeDef = type(jax.tree_structure(None))
-
-
 class PromptDecoderOnlyModel(models.DecoderOnlyModel):
   """A prompted DecoderOnly Model that uses the prefill cache for prompting."""
 

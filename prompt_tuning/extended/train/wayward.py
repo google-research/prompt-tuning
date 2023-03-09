@@ -32,6 +32,8 @@ from t5x import models
 
 from flaxformer.types import Array
 
+PyTree = Any
+
 
 def length(x: Any) -> int:
   """A length function we can bind to in gin."""
@@ -132,7 +134,7 @@ class WaywardPromptEncoderDecoderModel(models.EncoderDecoderModel):
 
   def loss_fn(
       self,
-      params: models.PyTreeDef,
+      params: PyTree,
       batch: Mapping[str, jnp.ndarray],
       dropout_rng: Optional[jnp.ndarray],
   ):
