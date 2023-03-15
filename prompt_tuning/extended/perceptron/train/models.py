@@ -71,7 +71,7 @@ class ValidLabelsOnlyEncoderDecoderModel(models.EncoderDecoderModel):
     self.length_normalize = length_normalize
     super().__init__(*args, **kwargs)
 
-  def get_initial_variables(
+  def get_initial_variables(  # pytype: disable=signature-mismatch  # jax-array
       self,
       rng: jnp.ndarray,
       input_shapes: Mapping[str, Array],
