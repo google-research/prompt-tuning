@@ -307,7 +307,7 @@ class MultiTaskPrompt(nn.Module):
   num_tasks: int
   to_task_idx: Callable[[Array], Array] = identity
   shared_init: Initializer = nn.initializers.uniform()
-  tasks_init: Callable[[Any, Iterable[int], Any],
+  tasks_init: Callable[[Any, Iterable[int], Any],  # pytype: disable=annotation-type-mismatch  # jax-types
                        Any] = nn.initializers.uniform()
   get_shared_features: GetFeatures = input_features
   get_task_size: GetTaskSize = None
