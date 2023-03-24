@@ -143,7 +143,7 @@ class Recycler:
     """Loss (L_2) between our recycling and the target."""
     pred = self.__call__(inputs)
     loss_value = optax.l2_loss(pred, targets)
-    return loss_value.mean()
+    return loss_value.mean()  # pytype: disable=bad-return-type  # numpy-scalars
 
   def fit(self, inputs: Array, targets: Array, **kwargs) -> "Recycler":
     """Learn a transformation from the `inputs` to the `targets`."""
@@ -243,7 +243,7 @@ class JaxRecycler(Recycler):
     """
     preds = self.recycler.apply(param, inputs)
     loss_value = optax.l2_loss(preds, targets)
-    return loss_value.mean()
+    return loss_value.mean()  # pytype: disable=bad-return-type  # numpy-scalars
 
   def save(self, path: str):
     """Save the model pytree to `path`."""
