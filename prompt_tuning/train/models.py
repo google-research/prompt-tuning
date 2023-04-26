@@ -32,7 +32,7 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
     super().__init__(*args, **kwargs)
     self.prompt_length = prompt_length
 
-  def _compute_logits(self,
+  def _compute_logits(self,  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
                       params: Mapping[str, Array],
                       batch: Mapping[str, jnp.ndarray],
                       dropout_rng: Optional[jnp.ndarray] = None) -> jnp.ndarray:
