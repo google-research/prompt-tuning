@@ -87,7 +87,7 @@ def squared_l2(x: Array) -> float:
   Returns:
     The norm over the hidden dimension of the sequence of arrays. [T]
   """
-  return jnp.sum(jnp.square(x), axis=1)
+  return jnp.sum(jnp.square(x), axis=1)  # pytype: disable=bad-return-type  # jnp-type
 
 
 def squared_l2_distance(x: Array, y: Array) -> Array:
