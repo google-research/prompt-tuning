@@ -125,7 +125,7 @@ class ValidLabelsOnlyEncoderDecoderModel(models.EncoderDecoderModel):
       decoder_params: Optional[MutableMapping[str, Any]] = None,
       return_all_decodes: bool = False,
       num_decodes: int = 1,
-      rng: Optional[jax.random.KeyArray] = None,
+      rng: Optional[jax.Array] = None,
   ) -> Tuple[jnp.ndarray, Mapping[str, jnp.ndarray]]:
     # [B, C]
     logits = self._compute_logits(params,
