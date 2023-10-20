@@ -44,7 +44,7 @@ class PromptDecoderOnlyModel(models.DecoderOnlyModel):
       self,
       params: Mapping[str, Array],
       batch: Mapping[str, jnp.ndarray],
-      rng: Optional[jax.random.KeyArray] = None,
+      rng: Optional[jax.Array] = None,
       *,
       return_all_decodes: bool = False,
       num_decodes: int = 1,
