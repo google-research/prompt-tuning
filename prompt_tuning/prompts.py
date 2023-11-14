@@ -170,7 +170,7 @@ def from_sample_of_embeddings(
   # the indices will be a jax tracer and it fails when it is converted to numpy
   # to lookup values in a number array. This call pins the embeddings to cpu so
   # we don't waste TPU memory carrying it around.
-  embeddings = jax.device_put(embeddings, jax.devices("cpu")[0])
+  embeddings = jax.device_put(embeddings, jax.local_devices(backend="cpu")[0])
 
   def initialize_from_embedding_sample(rng: Array,
                                        shape: Sequence[int]) -> Array:
