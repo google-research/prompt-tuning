@@ -1,4 +1,4 @@
-# Copyright 2023 Google.
+# Copyright 2024 Google.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class IA3Test(absltest.TestCase):
 
     params = ia3.IA3(ia3_init=nn.initializers.uniform()).init(
         jax.random.PRNGKey(0), default_input)
-    attention_params = jax.tree_map(
+    attention_params = jax.tree.map(
         lambda x: jnp.reshape(x, (heads, kv)), params)
 
     default_result = jax.jit(ia3.IA3().apply)(params, default_input)
