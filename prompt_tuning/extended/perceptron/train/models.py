@@ -1,4 +1,4 @@
-# Copyright 2023 Google.
+# Copyright 2024 Google.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ from flaxformer.types import Array
 
 
 def fold(batch: Mapping[str, Array]) -> Mapping[str, Array]:
-  return jax.tree_map(_fold, batch)
+  return jax.tree.map(_fold, batch)
 
 
 def _fold(arr: Array) -> Array:
@@ -51,7 +51,7 @@ def shape_fold(shape: Sequence[int]) -> Tuple[int, ...]:
 
 
 def unfold(batch: Mapping[str, Array], batch_size: int) -> Mapping[str, Array]:
-  return jax.tree_map(functools.partial(_unfold, batch_size), batch)
+  return jax.tree.map(functools.partial(_unfold, batch_size), batch)
 
 
 def _unfold(batch_size: int, arr: Array) -> Array:
@@ -98,8 +98,8 @@ class ValidLabelsOnlyEncoderDecoderModel(models.EncoderDecoderModel):
     batch_size = batch["encoder_input_tokens"].shape[0]
     # [B, C, T] -> [B * C, T]
     folded_batch = fold(batch)
-    logging.info("Batch: %s", jax.tree_map(jnp.shape, batch))
-    logging.info("Folded Batch: %s", jax.tree_map(jnp.shape, folded_batch))
+    logging.info("Batch: %s", jax.tree.map(jnp.shape, batch))
+    logging.info("Folded Batch: %s", jax.tree.map(jnp.shape, folded_batch))
     # [B * C, T, V]
     logits = super()._compute_logits(params, folded_batch, dropout_rng, mutable)
     # [B * C, T]
