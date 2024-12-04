@@ -8,7 +8,7 @@ These models are built on [T5X](https://github.com/google-research/t5x), which
 defines the model and training loop;
 [Flaxformer](https://github.com/google/flaxformer), which defines the actual
 model computation; [Flax](https://github.com/google/flax), which defines the low
-level model layers; and [Jax](https://github.com/google/jax), which provides the
+level model layers; and [Jax](https://github.com/jax-ml/jax), which provides the
 actual execution. Details of our implementation can be found
 [here](https://github.com/google-research/prompt-tuning/tree/main/prompt_tuning/implementation.md).
 
